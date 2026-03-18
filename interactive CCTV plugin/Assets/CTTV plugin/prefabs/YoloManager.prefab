@@ -46,12 +46,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::YoloRunner
   modelAsset: {fileID: 5022602860645237092, guid: 4062372d7a59f2644a41c25e1482e5b3, type: 3}
-  sourceTexture: {fileID: 0}
+  sourceTexture: {fileID: 8400000, guid: 3c9a43d428b71a84b8ef4e3b7d20a166, type: 2}
   classMapProvider: {fileID: 5268081747748878752}
   overlayCanvas: {fileID: 0}
   inputWidth: 640
   inputHeight: 640
-  confidenceThreshold: 0.25
+  confidenceThreshold: 0.7
   detectionInterval: 0.3
 --- !u!114 &5268081747748878752
 MonoBehaviour:
@@ -65,4 +65,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 04190bd6a4375d240aef60b8fd2711e4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::YoloClassMapProvider
-  classMapJson: {fileID: 0}
+  classMapJson: {fileID: 4900000, guid: 49bd15c7328b40640a1b5f425106130a, type: 3}
