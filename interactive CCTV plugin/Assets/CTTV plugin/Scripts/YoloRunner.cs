@@ -1,71 +1,151 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using Unity.InferenceEngine;
 
+[DisallowMultipleComponent]
 public class YoloRunner : MonoBehaviour
 {
-    public ModelAsset modelAsset;
-    public RenderTexture sourceTexture;
-    public YoloClassMapProvider classMapProvider;
-    public YoloOverlayCanvas overlayCanvas;
-    public int inputWidth = 640;
-    public int inputHeight = 640;
-    public float confidenceThreshold = 0.25f;
-    
+    [Header("Source")]
+    [SerializeField] private CctvCameraSource source;
+    [SerializeField] private YoloClassMapProvider classMapProvider;
 
-    [Header("Detection interval")]
-    public float detectionInterval = 0.3f; // раз в 0.3 сек
+    [Header("Model")]
+    [SerializeField] private ModelAsset modelAsset;
+    [SerializeField] private int inputWidth = 640;
+    [SerializeField] private int inputHeight = 640;
+    [SerializeField] private float confidenceThreshold = 0.25f;
+    [SerializeField] private int maxDetections = 300;
+
+    [Header("Timing")]
+    [SerializeField] private float detectionInterval = 0.3f;
+
+    [Header("Debug")]
+    [SerializeField] private bool verboseLogging = false;
+
+    private readonly List<YoloDetection> currentDetections = new();
 
     private Model runtimeModel;
     private Worker worker;
     private Tensor<float> inputTensor;
+    private float nextDetectionTime;
+    private bool initialized;
 
-    private float nextDetectionTime = 0f;
+    public CctvCameraSource Source => source;
+    public int InputWidth => inputWidth;
+    public int InputHeight => inputHeight;
+    public IReadOnlyList<YoloDetection> CurrentDetections => currentDetections;
 
-    void Start()
+    public event Action<YoloRunner> DetectionsUpdated;
+
+    private void Reset()
     {
-        runtimeModel = ModelLoader.Load(modelAsset);
-        worker = new Worker(runtimeModel, BackendType.GPUCompute);
-        inputTensor = new Tensor<float>(new TensorShape(1, 3, inputHeight, inputWidth));
-
-        foreach (var input in runtimeModel.inputs)
-            Debug.Log($"INPUT: {input.name} | shape = {input.shape}");
-
-        foreach (var output in runtimeModel.outputs)
-            Debug.Log($"OUTPUT: {output.name}");
+        if (source == null)
+            source = GetComponent<CctvCameraSource>();
     }
 
-    void Update()
+    private void Awake()
     {
-        if (sourceTexture == null)
+        if (source == null)
+            source = GetComponent<CctvCameraSource>();
+    }
+
+    private void OnEnable()
+    {
+        TryInitialize();
+    }
+
+    private void Update()
+    {
+        if (!initialized)
+            return;
+
+        if (source == null || source.OutputTexture == null)
             return;
 
         if (Time.time < nextDetectionTime)
             return;
 
         nextDetectionTime = Time.time + detectionInterval;
-
         RunDetection();
     }
 
-    void RunDetection()
+    private void OnDisable()
     {
-        TextureConverter.ToTensor(sourceTexture, inputTensor);
+        currentDetections.Clear();
+        DetectionsUpdated?.Invoke(this);
+        DisposeRuntime();
+    }
+
+    private void OnDestroy()
+    {
+        DisposeRuntime();
+    }
+
+    private void TryInitialize()
+    {
+        if (initialized)
+            return;
+
+        if (source == null)
+            source = GetComponent<CctvCameraSource>();
+
+        if (modelAsset == null)
+        {
+            Debug.LogError($"{name}: YoloRunner - не назначен Model Asset.");
+            return;
+        }
+
+        if (inputWidth <= 0) inputWidth = 640;
+        if (inputHeight <= 0) inputHeight = 640;
+        if (maxDetections <= 0) maxDetections = 300;
+        if (detectionInterval <= 0f) detectionInterval = 0.3f;
+
+        runtimeModel = ModelLoader.Load(modelAsset);
+        worker = new Worker(runtimeModel, BackendType.GPUCompute);
+        inputTensor = new Tensor<float>(new TensorShape(1, 3, inputHeight, inputWidth));
+
+        if (verboseLogging)
+        {
+            foreach (var input in runtimeModel.inputs)
+                Debug.Log($"{name} INPUT: {input.name} | shape = {input.shape}");
+
+            foreach (var output in runtimeModel.outputs)
+                Debug.Log($"{name} OUTPUT: {output.name}");
+        }
+
+        initialized = true;
+    }
+
+    private void RunDetection()
+    {
+        RenderTexture texture = source != null ? source.OutputTexture : null;
+        if (texture == null)
+            return;
+
+        currentDetections.Clear();
+
+        TextureConverter.ToTensor(texture, inputTensor);
         worker.Schedule(inputTensor);
 
         Tensor<float> outputTensor = worker.PeekOutput() as Tensor<float>;
+        if (outputTensor == null)
+        {
+            DetectionsUpdated?.Invoke(this);
+            return;
+        }
+
         float[] data = outputTensor.DownloadToArray();
+        if (data == null || data.Length == 0)
+        {
+            DetectionsUpdated?.Invoke(this);
+            return;
+        }
 
-        Debug.Log($"Output shape: {outputTensor.shape}");
-        Debug.Log($"Output values count: {data.Length}");
+        const int valuesPerDetection = 6;
+        int detectionsCount = Mathf.Min(maxDetections, data.Length / valuesPerDetection);
 
-        int detections = 300;
-        int valuesPerDetection = 6;
-        int found = 0;
-        
-        overlayCanvas?.ClearBoxes();
-
-
-        for (int i = 0; i < detections; i++)
+        for (int i = 0; i < detectionsCount; i++)
         {
             int offset = i * valuesPerDetection;
 
@@ -78,31 +158,38 @@ public class YoloRunner : MonoBehaviour
 
             if (conf < confidenceThreshold)
                 continue;
-            
+
             int classId = Mathf.RoundToInt(cls);
             string className = classMapProvider != null
                 ? classMapProvider.GetClassName(classId)
                 : $"unknown_{classId}";
-            
-            int drawIndex = found;
 
-            overlayCanvas?.DrawBox(
-                drawIndex,
-                x1, y1, x2, y2,
-                inputWidth, inputHeight,
-                className, conf
-            );
-
-            found++;
-            Debug.Log($"DET {found}: cls={className}, conf={conf:F2}, box=({x1:F1}, {y1:F1}) - ({x2:F1}, {y2:F1})");
+            currentDetections.Add(new YoloDetection(
+                x1,
+                y1,
+                x2,
+                y2,
+                conf,
+                classId,
+                className
+            ));
         }
 
-        Debug.Log($"Confident detections: {found}");
+        if (verboseLogging)
+            Debug.Log($"{name}: detections = {currentDetections.Count}");
+
+        DetectionsUpdated?.Invoke(this);
     }
 
-    void OnDisable()
+    private void DisposeRuntime()
     {
+        initialized = false;
+
         inputTensor?.Dispose();
         worker?.Dispose();
+
+        inputTensor = null;
+        worker = null;
+        runtimeModel = null;
     }
 }

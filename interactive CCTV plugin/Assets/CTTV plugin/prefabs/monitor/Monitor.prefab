@@ -65,7 +65,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Texture: {fileID: 8400000, guid: 3c9a43d428b71a84b8ef4e3b7d20a166, type: 2}
+  m_Texture: {fileID: 0}
   m_UVRect:
     serializedVersion: 2
     x: 0
@@ -81,6 +81,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5399923223245245101}
+  - component: {fileID: 8363422057494058361}
   m_Layer: 0
   m_Name: Monitor
   m_TagString: Untagged
@@ -104,6 +105,21 @@ Transform:
   - {fileID: 2431899718673845840}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8363422057494058361
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3787146370011156266}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 00040eaeb831a4345b991e324f509f89, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::YoloMonitorPanel
+  videoImage: {fileID: 715666877650935218}
+  overlayCanvas: {fileID: 8263964580032646347}
+  sourceRunner: {fileID: 0}
 --- !u!1 &4805390304535800129
 GameObject:
   m_ObjectHideFlags: 0
@@ -155,7 +171,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::YoloMonitorPanel
   videoImage: {fileID: 715666877650935218}
-  sourceTexture: {fileID: 8400000, guid: 3c9a43d428b71a84b8ef4e3b7d20a166, type: 2}
+  overlayCanvas: {fileID: 0}
+  sourceRunner: {fileID: 0}
 --- !u!1 &5254957872198953949
 GameObject:
   m_ObjectHideFlags: 0
@@ -206,7 +223,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::YoloOverlayCanvas
   overlayRect: {fileID: 4604213670027878835}
   boxPrefab: {fileID: 3457401579729857713, guid: e9b43550e0100a14e92bd97fe44ae0d1, type: 3}
-  maxBoxes: 30
+  initialPoolSize: 30
   defaultBoxColor: {r: 0, g: 1, b: 0, a: 1}
 --- !u!1 &9081836352047824767
 GameObject:

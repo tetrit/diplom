@@ -1,28 +1,46 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+[DisallowMultipleComponent]
 public class YoloOverlayCanvas : MonoBehaviour
 {
     [SerializeField] private RectTransform overlayRect;
     [SerializeField] private YoloBoxUI boxPrefab;
-    [SerializeField] private int maxBoxes = 30;
+    [SerializeField] private int initialPoolSize = 30;
     [SerializeField] private Color defaultBoxColor = Color.green;
 
     private readonly List<YoloBoxUI> boxes = new();
+    private bool initialized;
 
-    private void Awake()
+    private void Reset()
     {
         if (overlayRect == null)
             overlayRect = GetComponent<RectTransform>();
-
-        CreatePool();
     }
 
-    private void CreatePool()
+    private void Awake()
     {
-        boxes.Clear();
+        Initialize();
+    }
 
-        for (int i = 0; i < maxBoxes; i++)
+    private void Initialize()
+    {
+        if (initialized)
+            return;
+
+        if (overlayRect == null)
+            overlayRect = GetComponent<RectTransform>();
+
+        EnsurePoolSize(initialPoolSize);
+        initialized = true;
+    }
+
+    private void EnsurePoolSize(int size)
+    {
+        if (boxPrefab == null || overlayRect == null)
+            return;
+
+        while (boxes.Count < size)
         {
             YoloBoxUI box = Instantiate(boxPrefab, overlayRect);
             box.Hide();
@@ -32,8 +50,13 @@ public class YoloOverlayCanvas : MonoBehaviour
 
     public void ClearBoxes()
     {
+        Initialize();
+
         for (int i = 0; i < boxes.Count; i++)
-            boxes[i].Hide();
+        {
+            if (boxes[i] != null)
+                boxes[i].Hide();
+        }
     }
 
     public void DrawBox(
@@ -62,11 +85,18 @@ public class YoloOverlayCanvas : MonoBehaviour
         float confidence,
         Color color)
     {
-        if (index < 0 || index >= boxes.Count)
+        Initialize();
+
+        if (index < 0)
+            return;
+
+        if (boxPrefab == null || overlayRect == null)
             return;
 
         if (inputWidth <= 0 || inputHeight <= 0)
             return;
+
+        EnsurePoolSize(index + 1);
 
         float left = Mathf.Min(x1, x2) / inputWidth;
         float right = Mathf.Max(x1, x2) / inputWidth;
@@ -79,8 +109,11 @@ public class YoloOverlayCanvas : MonoBehaviour
         bottom = Mathf.Clamp01(bottom);
 
         if (right - left <= 0.001f || bottom - top <= 0.001f)
+        {
+            boxes[index].Hide();
             return;
-                
+        }
+
         boxes[index].SetNormalizedBox(
             left,
             top,
@@ -90,6 +123,5 @@ public class YoloOverlayCanvas : MonoBehaviour
             confidence,
             color
         );
-        
     }
 }
