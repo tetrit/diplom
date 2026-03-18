@@ -6,8 +6,10 @@ public class YoloBoxUI : MonoBehaviour
 {
     [SerializeField] private Image frameImage;
     [SerializeField] private TMP_Text label;
+    [SerializeField] private Vector2 labelOffset = new Vector2(4f, 4f);
 
     private RectTransform rectTransform;
+    private RectTransform labelRect;
 
     private void Awake()
     {
@@ -15,19 +17,38 @@ public class YoloBoxUI : MonoBehaviour
 
         if (frameImage == null)
             frameImage = GetComponent<Image>();
+
+        if (label != null)
+            labelRect = label.rectTransform;
     }
 
-    public void SetBox(
-        float x,
-        float y,
-        float width,
-        float height,
+    public void SetNormalizedBox(
+        float leftNorm,
+        float topNorm,
+        float rightNorm,
+        float bottomNorm,
         string className,
         float confidence,
         Color color)
     {
-        rectTransform.anchoredPosition = new Vector2(x, y);
-        rectTransform.sizeDelta = new Vector2(width, height);
+        leftNorm = Mathf.Clamp01(leftNorm);
+        rightNorm = Mathf.Clamp01(rightNorm);
+        topNorm = Mathf.Clamp01(topNorm);
+        bottomNorm = Mathf.Clamp01(bottomNorm);
+
+        if (rightNorm <= leftNorm || bottomNorm <= topNorm)
+        {
+            Hide();
+            return;
+        }
+
+
+        rectTransform.anchorMin = new Vector2(leftNorm, 1f - bottomNorm);
+        rectTransform.anchorMax = new Vector2(rightNorm, 1f - topNorm);
+        rectTransform.offsetMin = Vector2.zero;
+        rectTransform.offsetMax = Vector2.zero;
+        rectTransform.anchoredPosition = Vector2.zero;
+        rectTransform.localScale = Vector3.one;
 
         if (frameImage != null)
             frameImage.color = color;
@@ -36,7 +57,14 @@ public class YoloBoxUI : MonoBehaviour
         {
             label.text = $"{className} {confidence:F2}";
             label.color = color;
-            label.rectTransform.anchoredPosition = new Vector2(0, height * 0.5f + 12f);
+
+            if (labelRect != null)
+            {
+                //labelRect.anchorMin = new Vector2(0f, 1f);
+                //labelRect.anchorMax = new Vector2(0f, 1f);
+                //labelRect.pivot = new Vector2(0f, 0f);
+                //labelRect.anchoredPosition = labelOffset;
+            }
         }
 
         gameObject.SetActive(true);

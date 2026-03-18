@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class YoloOverlayCanvas : MonoBehaviour
 {
-    [SerializeField] private RectTransform canvasRect;
+    [SerializeField] private RectTransform overlayRect;
     [SerializeField] private YoloBoxUI boxPrefab;
     [SerializeField] private int maxBoxes = 30;
     [SerializeField] private Color defaultBoxColor = Color.green;
@@ -12,8 +12,8 @@ public class YoloOverlayCanvas : MonoBehaviour
 
     private void Awake()
     {
-        if (canvasRect == null)
-            canvasRect = GetComponent<RectTransform>();
+        if (overlayRect == null)
+            overlayRect = GetComponent<RectTransform>();
 
         CreatePool();
     }
@@ -24,7 +24,7 @@ public class YoloOverlayCanvas : MonoBehaviour
 
         for (int i = 0; i < maxBoxes; i++)
         {
-            YoloBoxUI box = Instantiate(boxPrefab, canvasRect);
+            YoloBoxUI box = Instantiate(boxPrefab, overlayRect);
             box.Hide();
             boxes.Add(box);
         }
@@ -65,41 +65,31 @@ public class YoloOverlayCanvas : MonoBehaviour
         if (index < 0 || index >= boxes.Count)
             return;
 
-        float canvasWidth = canvasRect.rect.width;
-        float canvasHeight = canvasRect.rect.height;
-
-        float scaleX = canvasWidth / inputWidth;
-        float scaleY = canvasHeight / inputHeight;
-
-        float left = x1 * scaleX;
-        float right = x2 * scaleX;
-        float top = y1 * scaleY;
-        float bottom = y2 * scaleY;
-
-        float width = right - left;
-        float height = bottom - top;
-
-        if (width <= 1f || height <= 1f)
+        if (inputWidth <= 0 || inputHeight <= 0)
             return;
 
-        float centerX = left + width * 0.5f;
-        float centerY = top + height * 0.5f;
+        float left = Mathf.Min(x1, x2) / inputWidth;
+        float right = Mathf.Max(x1, x2) / inputWidth;
+        float top = Mathf.Min(y1, y2) / inputHeight;
+        float bottom = Mathf.Max(y1, y2) / inputHeight;
 
-        // Перевод из координат изображения:
-        // (0,0) в левом верхнем углу
-        // в координаты UI:
-        // (0,0) в центре canvas, Y направлена вверх
-        float anchoredX = centerX - canvasWidth * 0.5f;
-        float anchoredY = -(centerY - canvasHeight * 0.5f);
+        left = Mathf.Clamp01(left);
+        right = Mathf.Clamp01(right);
+        top = Mathf.Clamp01(top);
+        bottom = Mathf.Clamp01(bottom);
 
-        boxes[index].SetBox(
-            anchoredX,
-            anchoredY,
-            width,
-            height,
+        if (right - left <= 0.001f || bottom - top <= 0.001f)
+            return;
+                
+        boxes[index].SetNormalizedBox(
+            left,
+            top,
+            right,
+            bottom,
             className,
             confidence,
             color
         );
+        
     }
 }
