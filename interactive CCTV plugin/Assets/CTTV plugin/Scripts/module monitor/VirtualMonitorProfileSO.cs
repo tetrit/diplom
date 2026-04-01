@@ -10,9 +10,6 @@ namespace Surveillance.Monitors
         [Header("Source")]
         public VirtualMonitorSourceMode sourceMode = VirtualMonitorSourceMode.CameraStream;
 
-        [Tooltip("ID камеры из VirtualCameraSource.CameraId")]
-        public string cameraId = "camera_01";
-
         [Header("Behaviour")]
         public bool showFallbackWhenSourceMissing = true;
         public bool autoRebind = true;

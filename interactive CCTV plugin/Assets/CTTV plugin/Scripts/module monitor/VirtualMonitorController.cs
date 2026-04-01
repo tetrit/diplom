@@ -8,14 +8,22 @@ namespace Surveillance.Monitors
         [Header("Config")]
         [SerializeField] private VirtualMonitorProfileSO profile;
 
+        [Header("Per-monitor source settings")]
+        [SerializeField] private string cameraId = "camera_01";
+
         [Header("Scene refs")]
         [SerializeField] private VirtualMonitorView view;
         [SerializeField] private VirtualMonitorExternalInput externalInput;
 
-        private IVirtualCameraService _cameraService;
-        private VirtualCameraSource _boundCamera;
-        private Texture _lastShownTexture;
-        private bool _isStarted;
+        private IVirtualCameraService cameraService;
+        private VirtualCameraSource boundCamera;
+        private Texture lastShownTexture;
+        private bool isStarted;
+
+        public string CameraId
+        {
+            get { return cameraId; }
+        }
 
         private void Awake()
         {
@@ -25,18 +33,18 @@ namespace Surveillance.Monitors
 
         private void Start()
         {
-            _isStarted = true;
+            isStarted = true;
 
             if (profile == null)
             {
-                Debug.LogWarning($"[{name}] VirtualMonitorProfileSO is not assigned.");
+                Debug.LogWarning("[" + name + "] VirtualMonitorProfileSO is not assigned.");
                 ShowFallback();
                 return;
             }
 
             if (view == null)
             {
-                Debug.LogError($"[{name}] VirtualMonitorView is not assigned.");
+                Debug.LogError("[" + name + "] VirtualMonitorView is not assigned.");
                 return;
             }
 
@@ -47,28 +55,20 @@ namespace Surveillance.Monitors
             }
 
             if (profile.sourceMode == VirtualMonitorSourceMode.CameraStream)
-            {
                 BindCameraMode();
-            }
             else
-            {
                 BindExternalMode();
-            }
         }
 
         private void Update()
         {
-            if (!_isStarted || profile == null)
+            if (!isStarted || profile == null)
                 return;
 
             if (profile.sourceMode == VirtualMonitorSourceMode.CameraStream)
-            {
                 UpdateCameraTexture();
-            }
             else
-            {
                 UpdateExternalTexture();
-            }
         }
 
         private void OnDestroy()
@@ -79,85 +79,42 @@ namespace Surveillance.Monitors
                 externalInput.TextureChanged -= OnExternalTextureChanged;
         }
 
-        public void SetCameraId(string cameraId)
+        public void SetCameraId(string newCameraId)
         {
-            if (profile == null)
-                return;
-
-            profile.cameraId = cameraId;
-
-            if (profile.sourceMode == VirtualMonitorSourceMode.CameraStream && _isStarted)
-                RebindCamera();
-        }
-
-        public void SetSourceMode(VirtualMonitorSourceMode sourceMode)
-        {
-            if (profile == null)
-                return;
-
-            if (profile.sourceMode == sourceMode)
-                return;
-
-            profile.sourceMode = sourceMode;
-
-            if (!_isStarted)
-                return;
-
-            if (sourceMode == VirtualMonitorSourceMode.CameraStream)
-            {
-                if (externalInput != null)
-                    externalInput.TextureChanged -= OnExternalTextureChanged;
-
-                BindCameraMode();
-            }
-            else
-            {
-                UnsubscribeFromCameraService();
-                _boundCamera = null;
-                BindExternalMode();
-            }
-        }
-
-        public void RefreshNow()
-        {
-            if (profile == null)
-                return;
-
-            if (profile.sourceMode == VirtualMonitorSourceMode.CameraStream)
-                UpdateCameraTexture();
-            else
-                UpdateExternalTexture();
+            cameraId = newCameraId;
+            RebindCamera();
         }
 
         private void BindCameraMode()
         {
-            if (!ServiceLocator.TryGet(out _cameraService))
+            if (!ServiceLocator.TryGet<IVirtualCameraService>(out cameraService))
             {
-                Debug.LogWarning($"[{name}] IVirtualCameraService is not registered.");
+                Debug.LogWarning("[" + name + "] IVirtualCameraService is not registered.");
                 ShowFallback();
                 return;
             }
 
-            _cameraService.CameraRegistered += OnCameraRegistered;
-            _cameraService.CameraUnregistered += OnCameraUnregistered;
+            cameraService.CameraRegistered += OnCameraRegistered;
+            cameraService.CameraUnregistered += OnCameraUnregistered;
 
             RebindCamera();
         }
 
         private void RebindCamera()
         {
-            _boundCamera = null;
-            _lastShownTexture = null;
+            boundCamera = null;
+            lastShownTexture = null;
 
-            if (_cameraService == null || profile == null)
+            if (cameraService == null || profile == null)
             {
                 ShowFallback();
                 return;
             }
 
-            if (_cameraService.TryGetCamera(profile.cameraId, out VirtualCameraSource camera))
+            VirtualCameraSource camera;
+            if (cameraService.TryGetCamera(cameraId, out camera))
             {
-                _boundCamera = camera;
+                boundCamera = camera;
                 UpdateCameraTexture();
                 return;
             }
@@ -169,7 +126,7 @@ namespace Surveillance.Monitors
         {
             if (externalInput == null)
             {
-                Debug.LogWarning($"[{name}] ExternalInput mode selected, but VirtualMonitorExternalInput is not assigned.");
+                Debug.LogWarning("[" + name + "] ExternalInput mode selected, but VirtualMonitorExternalInput is not assigned.");
                 ShowFallback();
                 return;
             }
@@ -182,7 +139,7 @@ namespace Surveillance.Monitors
 
         private void UpdateCameraTexture()
         {
-            if (_boundCamera == null)
+            if (boundCamera == null)
             {
                 if (profile != null && profile.autoRebind)
                     RebindCamera();
@@ -192,7 +149,7 @@ namespace Surveillance.Monitors
                 return;
             }
 
-            Texture texture = _boundCamera.OutputTexture;
+            Texture texture = boundCamera.OutputTexture;
 
             if (texture == null)
             {
@@ -200,10 +157,10 @@ namespace Surveillance.Monitors
                 return;
             }
 
-            if (_lastShownTexture != texture)
+            if (lastShownTexture != texture)
             {
                 view.Show(texture);
-                _lastShownTexture = texture;
+                lastShownTexture = texture;
             }
         }
 
@@ -223,10 +180,10 @@ namespace Surveillance.Monitors
                 return;
             }
 
-            if (_lastShownTexture != texture)
+            if (lastShownTexture != texture)
             {
                 view.Show(texture);
-                _lastShownTexture = texture;
+                lastShownTexture = texture;
             }
         }
 
@@ -239,7 +196,7 @@ namespace Surveillance.Monitors
             }
 
             view.Show(texture);
-            _lastShownTexture = texture;
+            lastShownTexture = texture;
         }
 
         private void OnCameraRegistered(VirtualCameraSource source)
@@ -250,39 +207,39 @@ namespace Surveillance.Monitors
             if (profile.sourceMode != VirtualMonitorSourceMode.CameraStream)
                 return;
 
-            if (source.CameraId != profile.cameraId)
+            if (source.CameraId != cameraId)
                 return;
 
-            _boundCamera = source;
+            boundCamera = source;
             UpdateCameraTexture();
         }
 
         private void OnCameraUnregistered(VirtualCameraSource source)
         {
-            if (source == null || _boundCamera == null)
+            if (source == null || boundCamera == null)
                 return;
 
-            if (source != _boundCamera)
+            if (source != boundCamera)
                 return;
 
-            _boundCamera = null;
-            _lastShownTexture = null;
+            boundCamera = null;
+            lastShownTexture = null;
             ShowFallback();
         }
 
         private void UnsubscribeFromCameraService()
         {
-            if (_cameraService == null)
+            if (cameraService == null)
                 return;
 
-            _cameraService.CameraRegistered -= OnCameraRegistered;
-            _cameraService.CameraUnregistered -= OnCameraUnregistered;
-            _cameraService = null;
+            cameraService.CameraRegistered -= OnCameraRegistered;
+            cameraService.CameraUnregistered -= OnCameraUnregistered;
+            cameraService = null;
         }
 
         private void ShowFallback()
         {
-            _lastShownTexture = null;
+            lastShownTexture = null;
 
             if (profile != null && !profile.showFallbackWhenSourceMissing)
                 return;
@@ -290,5 +247,13 @@ namespace Surveillance.Monitors
             if (view != null)
                 view.ShowFallback();
         }
+
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            if (view == null)
+                view = GetComponent<VirtualMonitorView>();
+        }
+#endif
     }
 }
