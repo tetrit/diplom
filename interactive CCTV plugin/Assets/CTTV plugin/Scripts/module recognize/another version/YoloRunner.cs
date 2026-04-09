@@ -8,6 +8,9 @@ public class YoloRunner : MonoBehaviour
     public VirtualCameraSource cameraSource;
     private RenderTexture _sourceTexture;
     public YoloClassMapProvider classMapProvider;
+    
+    //TODO: убрать это в другой скрипт
+    public YoloOverlayCanvas overlayCanvas;
     public int inputWidth = 640;
     public int inputHeight = 640;
     public float confidenceThreshold = 0.25f;
@@ -68,6 +71,8 @@ public class YoloRunner : MonoBehaviour
         int detections = 300;
         int valuesPerDetection = 6;
         int found = 0;
+        
+        overlayCanvas?.ClearBoxes();
 
         for (int i = 0; i < detections; i++)
         {
@@ -87,6 +92,16 @@ public class YoloRunner : MonoBehaviour
             string className = classMapProvider != null
                 ? classMapProvider.GetClassName(classId)
                 : $"unknown_{classId}";
+            
+            
+            int drawIndex = found;
+
+            overlayCanvas?.DrawBox(
+                drawIndex,
+                x1, y1, x2, y2,
+                inputWidth, inputHeight,
+                className, conf
+            );
 
             found++;
             Debug.Log($"DET {found}: cls={className}, conf={conf:F2}, box=({x1:F1}, {y1:F1}) - ({x2:F1}, {y2:F1})");
