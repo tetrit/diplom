@@ -45,4 +45,24 @@ namespace Surveillance.Cameras
             Texture = texture;
         }
     }
+    
+    public readonly struct VirtualCameraParamForPredict
+    {
+        public readonly int width;
+        public readonly int height;
+        public readonly int targetCaptureFps;
+        public readonly RenderTexture renderTexture;
+
+        public VirtualCameraParamForPredict(
+            int width,
+            int height,
+            int targetCaptureFps,
+            RenderTexture renderTexture)
+        {
+            this.width = width;
+            this.height = height;
+            this.targetCaptureFps = targetCaptureFps;
+            this.renderTexture = renderTexture;
+        }
+    }
 }

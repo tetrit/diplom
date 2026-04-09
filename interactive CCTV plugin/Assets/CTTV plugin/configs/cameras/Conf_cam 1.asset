@@ -16,7 +16,7 @@ MonoBehaviour:
   height: 360
   depthBits: 24
   renderTextureFormat: 0
-  targetCaptureFps: 10
+  targetCaptureFps: 1
   startStreaming: 1
   fieldOfView: 60
   nearClipPlane: 0.1
