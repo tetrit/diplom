@@ -30,6 +30,10 @@ namespace Surveillance.Cameras
         public bool IsStreaming => _isStreaming;
 
         public event Action<VirtualCameraFrame> FrameProduced;
+        
+        //TODO: событие перекинуть в менеджер камер
+        public event Action<VirtualCameraParamForPredict>  ProfileProduced; 
+        
 
         private void Awake()
         {
@@ -45,6 +49,9 @@ namespace Surveillance.Cameras
             {
                 service.Register(this);
             }
+
+            VirtualCameraParamForPredict paramForPredict = new VirtualCameraParamForPredict(profile.width, profile.height, profile.targetCaptureFps, _renderTexture);
+            ProfileProduced?.Invoke(paramForPredict);
         }
 
         private void Update()
@@ -271,4 +278,6 @@ namespace Surveillance.Cameras
         }
 #endif
     }
+
+
 }

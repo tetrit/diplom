@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 976ae470abeed27459eb32bf623bbc1f, type: 3}
-  m_Name: VirtualMonitorProfile
+  m_Name: Conf Mon 1
   m_EditorClassIdentifier: Assembly-CSharp::Surveillance.Monitors.VirtualMonitorProfileSO
   sourceMode: 0
   cameraId: camera_01
