@@ -14,6 +14,6 @@ namespace Surveillance.Cameras
         void Register(VirtualCameraSource source);
         void Unregister(VirtualCameraSource source);
 
-        bool TryGetCamera(string cameraId, out VirtualCameraSource source);
+        bool TryGetCamera(int cameraId, out VirtualCameraSource source);
     }
 }

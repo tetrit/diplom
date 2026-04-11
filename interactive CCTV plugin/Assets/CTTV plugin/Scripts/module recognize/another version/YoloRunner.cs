@@ -1,41 +1,50 @@
 using Surveillance.Cameras;
 using UnityEngine;
 using Unity.InferenceEngine;
+using UnityEngine.Rendering;
 
 public class YoloRunner : MonoBehaviour
 {
-    public ModelAsset modelAsset;
-    public VirtualCameraSource cameraSource;
+    [SerializeField]private ModelAsset modelAsset;
+    [SerializeField]private VirtualCameraSource cameraSource;
     private RenderTexture _sourceTexture;
-    public YoloClassMapProvider classMapProvider;
+    [SerializeField]private YoloClassMapProvider classMapProvider;
+    [SerializeField]private VirtualCameraManager virtualCameraManager;
+    [SerializeField]private int cameraId = 0;
     
     //TODO: убрать это в другой скрипт
     public YoloOverlayCanvas overlayCanvas;
     public int inputWidth = 640;
     public int inputHeight = 640;
-    public float confidenceThreshold = 0.25f;
-
-    [Header("Detection interval")]
-    public float detectionInterval = 0.3f; // раз в 0.3 сек
+    [SerializeField][Range(0.1f, 1f)]private float confidenceThreshold = 0.25f;
+    
+    private float detectionInterval = 0.3f;
 
     private Model runtimeModel;
     private Worker worker;
     private Tensor<float> inputTensor;
 
     private float nextDetectionTime = 0f;
-
+    
+    
+ 
     void Start()
     {
-        cameraSource.ProfileProduced += setup;
         runtimeModel = ModelLoader.Load(modelAsset);
         worker = new Worker(runtimeModel, BackendType.GPUCompute);
         inputTensor = new Tensor<float>(new TensorShape(1, 3, inputHeight, inputWidth));
 
-        foreach (var input in runtimeModel.inputs)
-            Debug.Log($"INPUT: {input.name} | shape = {input.shape}");
+        if (virtualCameraManager != null)
+            virtualCameraManager.cameraInitializedEvent += ConnectToCamera;
 
-        foreach (var output in runtimeModel.outputs)
-            Debug.Log($"OUTPUT: {output.name}");
+        if (cameraSource != null)
+            ConnectToCamera(cameraSource);
+        else if (virtualCameraManager != null)
+        {
+            var source = virtualCameraManager.GetVirtualCamera(cameraId);
+            if (source != null)
+                ConnectToCamera(source);
+        }
     }
 
     void Update()
@@ -44,6 +53,7 @@ public class YoloRunner : MonoBehaviour
         //TODO: короутина, ию ноу?
         if (_sourceTexture == null)
         {
+            //Debug.Log($"No source texture assigned");
             return;
         }
 
@@ -114,9 +124,36 @@ public class YoloRunner : MonoBehaviour
         worker?.Dispose();
     }
     
-    void setup(VirtualCameraParamForPredict paramForPredict)
+    void setup(RenderTexture  texture, int fps)
     {
-        _sourceTexture = paramForPredict.renderTexture;
-        detectionInterval = 1f / paramForPredict.targetCaptureFps;
+        _sourceTexture = texture;
+        detectionInterval = 1f / fps;
     }
+
+    void ConnectToCamera(VirtualCameraSource source)
+    {
+        if (source == null || source.CameraId != cameraId)
+        {
+            return;
+        }
+
+        Debug.Log("[YOLO] Camera event received");
+        cameraSource = source;
+        StartCoroutine(BindWhenReady(source));
+    }
+
+    private System.Collections.IEnumerator BindWhenReady(VirtualCameraSource source)
+    {
+        while (source != null && source.OutputTexture == null)
+            yield return null;
+
+        if (source == null)
+            yield break;
+
+        _sourceTexture = source.OutputTexture;
+        detectionInterval = 1f / Mathf.Max(1, source.fps);
+
+        Debug.Log($"[YOLO] Bound to texture: {_sourceTexture.name}, fps={source.fps}");
+    }
+    
 }
