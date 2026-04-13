@@ -3,6 +3,7 @@ using UnityEngine;
 using Unity.InferenceEngine;
 using UnityEngine.Rendering;
 using System.Threading.Tasks;
+using System.Collections;
 
 public class YoloRunner : MonoBehaviour
 {
@@ -20,12 +21,6 @@ public class YoloRunner : MonoBehaviour
     [SerializeField, Range(0.1f, 1f)]
     private float confidenceThreshold = 0.25f;
 
-    public float ConfidenceThreshold
-    {
-        get => confidenceThreshold;
-        set => confidenceThreshold = value;
-    }
-
     [SerializeField]
     private float detectionInterval = 0.2f;
 
@@ -37,39 +32,28 @@ public class YoloRunner : MonoBehaviour
     private float nextDetectionTime = 0f;
     private bool inferenceInFlight = false;
     private bool disposed = false;
+    private bool initialized = false;
+    private Coroutine bindCoroutine;
 
-    public int CameraId
+    public int CameraId => cameraId;
+
+    public float ConfidenceThreshold
     {
-        get => cameraId;
-        set => cameraId = value;
+        get => confidenceThreshold;
+        set => confidenceThreshold = value;
     }
 
     void Awake()
     {
         virtualCameraManager = FindObjectOfType<VirtualCameraManager>();
-    }
-
-    void Start()
-    {
-        runtimeModel = ModelLoader.Load(modelAsset);
-        worker = new Worker(runtimeModel, BackendType.GPUCompute);
-        inputTensor = new Tensor<float>(new TensorShape(1, 3, inputHeight, inputWidth));
-
-        if (virtualCameraManager != null)
-            virtualCameraManager.cameraInitializedEvent += ConnectToCamera;
-
-        if (cameraSource != null)
-            ConnectToCamera(cameraSource);
-        else if (virtualCameraManager != null)
-        {
-            var source = virtualCameraManager.GetVirtualCamera(cameraId);
-            if (source != null)
-                ConnectToCamera(source);
-        }
+        InitModelIfNeeded();
     }
 
     void Update()
     {
+        if (!initialized)
+            return;
+
         if (_sourceTexture == null || inferenceInFlight)
             return;
 
@@ -78,6 +62,52 @@ public class YoloRunner : MonoBehaviour
 
         nextDetectionTime = Time.time + detectionInterval;
         _ = RunDetectionAsync();
+    }
+
+    private void InitModelIfNeeded()
+    {
+        if (runtimeModel != null && worker != null && inputTensor != null)
+            return;
+
+        runtimeModel = ModelLoader.Load(modelAsset);
+        worker = new Worker(runtimeModel, BackendType.GPUCompute);
+        inputTensor = new Tensor<float>(new TensorShape(1, 3, inputHeight, inputWidth));
+    }
+
+    public void InitializeFromMonitor(int newCameraId, float newConfidenceThreshold)
+    {
+        cameraId = newCameraId;
+        confidenceThreshold = newConfidenceThreshold;
+        initialized = true;
+    }
+
+    public void BindToCamera(VirtualCameraSource source)
+    {
+        if (source == null)
+        {
+            cameraSource = null;
+            _sourceTexture = null;
+            return;
+        }
+
+        if (source.CameraId != cameraId)
+            return;
+
+        cameraSource = source;
+
+        if (bindCoroutine != null)
+            StopCoroutine(bindCoroutine);
+
+        bindCoroutine = StartCoroutine(BindWhenReady(cameraSource));
+    }
+
+    public void BindToCameraById()
+    {
+        if (virtualCameraManager == null)
+            return;
+
+        var source = virtualCameraManager.GetVirtualCamera(cameraId);
+        BindToCamera(source);
     }
 
     async Task RunDetectionAsync()
@@ -148,16 +178,7 @@ public class YoloRunner : MonoBehaviour
         }
     }
 
-    void ConnectToCamera(VirtualCameraSource source)
-    {
-        if (source == null || source.CameraId != cameraId)
-            return;
-
-        cameraSource = source;
-        StartCoroutine(BindWhenReady(source));
-    }
-
-    private System.Collections.IEnumerator BindWhenReady(VirtualCameraSource source)
+    private IEnumerator BindWhenReady(VirtualCameraSource source)
     {
         while (source != null && source.OutputTexture == null)
             yield return null;

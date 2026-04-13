@@ -91,10 +91,10 @@ public class VirtualCameraManager : MonoBehaviour
     {
         if (_virtualcameraDict.ContainsKey(cameraId))
         {
-            Debug.Log("Yes");
+
             return true;
         }
-        Debug.Log("No");
+
         return false;
     }
 
