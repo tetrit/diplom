@@ -10,13 +10,38 @@ public class YoloRunner : MonoBehaviour
     private RenderTexture _sourceTexture;
     [SerializeField]private YoloClassMapProvider classMapProvider;
     [SerializeField]private VirtualCameraManager virtualCameraManager;
-    [SerializeField]private int cameraId = 0;
+    [SerializeField]private int cameraId;
+
+    public int CameraId
+    {
+        get => cameraId;
+        set
+        {
+            if (cameraId == value) return;
+            cameraId = value;
+
+            if (virtualCameraManager != null)
+            {
+                var source = virtualCameraManager.GetVirtualCamera(cameraId);
+                if (source != null)
+                    ConnectToCamera(source);
+                else
+                    cameraSource = null;
+            }
+        }
+    }
     
     //TODO: убрать это в другой скрипт
     public YoloOverlayCanvas overlayCanvas;
     public int inputWidth = 640;
     public int inputHeight = 640;
     [SerializeField][Range(0.1f, 1f)]private float confidenceThreshold = 0.25f;
+
+    public float ConfidenceThreshold
+    {
+        get => confidenceThreshold;
+        set => confidenceThreshold = value;
+    }
     
     private float detectionInterval = 0.3f;
 
@@ -25,8 +50,13 @@ public class YoloRunner : MonoBehaviour
     private Tensor<float> inputTensor;
 
     private float nextDetectionTime = 0f;
-    
-    
+
+
+
+    void Awake()
+    {
+        virtualCameraManager = FindObjectOfType<VirtualCameraManager>();
+    }
  
     void Start()
     {
@@ -41,6 +71,7 @@ public class YoloRunner : MonoBehaviour
             ConnectToCamera(cameraSource);
         else if (virtualCameraManager != null)
         {
+            //TODO: вывыв
             var source = virtualCameraManager.GetVirtualCamera(cameraId);
             if (source != null)
                 ConnectToCamera(source);

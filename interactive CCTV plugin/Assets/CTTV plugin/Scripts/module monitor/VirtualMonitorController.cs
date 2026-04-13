@@ -7,29 +7,40 @@ namespace Surveillance.Monitors
     {
         [Header("Config")]
         [SerializeField] private VirtualMonitorProfileSO profile;
+        public VirtualMonitorProfileSO Profile
+        {
+            get { return profile; }
+            set { profile = value; }
+        }
         [SerializeField]private VirtualCameraManager virtualCameraManager;
 
         [Header("Per-monitor source settings")]
-        [SerializeField] private int cameraId = 0;
-
-        [Header("Scene refs")]
-        [SerializeField] private VirtualMonitorView view;
-        [SerializeField] private VirtualMonitorExternalInput externalInput;
-        
-        
-        private VirtualCameraSource boundCamera;
-        private Texture lastShownTexture;
-        private bool isStarted;
-
+        [SerializeField] private int cameraId;
         public int CameraId
         {
             get { return cameraId; }
+            set { cameraId = value; }
         }
+
+
+        [Header("Scene refs")]
+        [SerializeField] private VirtualMonitorView view;
+
+        [SerializeField] private VirtualMonitorExternalInput externalInput;
+
+
+        private VirtualCameraSource boundCamera;
+
+        private Texture lastShownTexture;
+
+        private bool isStarted;
 
         private void Awake()
         {
             if (view == null)
                 view = GetComponent<VirtualMonitorView>();
+            
+            virtualCameraManager = FindObjectOfType<VirtualCameraManager>();
         }
 
         private void Start()
@@ -208,7 +219,6 @@ namespace Surveillance.Monitors
             if (source.CameraId != cameraId)
                 return;
             Debug.Log(source.CameraId);
-            Debug.Log("опа");
             boundCamera = source;
             UpdateCameraTexture();
         }

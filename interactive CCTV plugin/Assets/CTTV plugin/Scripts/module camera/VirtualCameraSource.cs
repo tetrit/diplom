@@ -27,6 +27,12 @@ namespace Surveillance.Cameras
         [Header("Config")]
         [SerializeField] private CameraCaptureProfileSO profile;
 
+        public CameraCaptureProfileSO Profile
+        {
+            get { return profile; }
+            set { profile = value; }
+        }
+
         public int fps
         {
             get

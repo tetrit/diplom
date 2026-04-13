@@ -20,5 +20,6 @@ public class VirtualCameraManagerEditorButtons: Editor
         {
             virtualCameraManager.DestroyCameraEditor(virtualCameraManager.CameraIDToRemove);
         }
+        
     }
 }

@@ -6,7 +6,19 @@ public class YoloOverlayCanvas : MonoBehaviour
     [SerializeField] private RectTransform overlayRect;
     [SerializeField] private YoloBoxUI boxPrefab;
     [SerializeField] private int maxBoxes = 30;
+    public int MaxBoxes
+    {
+        get => maxBoxes;
+        set => maxBoxes = value;
+    }
+
     [SerializeField] private Color defaultBoxColor = Color.green;
+    public Color DefaultBoxColor
+    {
+        get => defaultBoxColor;
+        set => defaultBoxColor = value;
+    }
+    
 
     private readonly List<YoloBoxUI> boxes = new();
 

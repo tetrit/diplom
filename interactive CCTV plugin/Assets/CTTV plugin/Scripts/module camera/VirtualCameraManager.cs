@@ -11,12 +11,11 @@ public class VirtualCameraManager : MonoBehaviour
     public VirtualCameraSource CameraPrefab{get{return cameraPrefab;}}
     //[SerializeField]private List<VirtualCameraSource> virtualCameraList = new List<VirtualCameraSource>();
     
-    /*TODO: переделать это нахуй. Надо чтобы просто был поиск по сценам, а то это словарь всё время обнуляется да и в целом
-     будет лучше да и проще в теории, ну ты понял что я из прошлого имел ввиду, да?
+    /*
      
      TODO: сделай ещё bootstraper, который будет сам манагер назначать
     */
-    [SerializeField]private Dictionary<int, VirtualCameraSource> virtualcameraDict = new Dictionary<int, VirtualCameraSource>();
+    private Dictionary<int, VirtualCameraSource> _virtualcameraDict = new Dictionary<int, VirtualCameraSource>();
 
 
     [SerializeField]private int cameraIDToRemove;
@@ -26,17 +25,27 @@ public class VirtualCameraManager : MonoBehaviour
         get { return cameraIDToRemove; }
     }
     public event Action<VirtualCameraSource> cameraInitializedEvent;
+    
     public event Action<int> cameraDestroyedEvent;
-    void Start()
-    {
-        //SpawnCamera(_cameraPrefab);
-    }
+
     
 
     private void SpawnCamera(VirtualCameraSource virtualcamera)
     {
+
+        int id = 0;
+        if (IsDictNull() && FindAnyObjectByType<VirtualCameraSource>() != null)
+        {
+            FillVirtualCameraDict();
+        }
+
+        while (_virtualcameraDict.ContainsKey(id))
+        {
+            id++;
+        }
+        
         VirtualCameraSource spawned = Instantiate(virtualcamera);
-        spawned.CameraId = virtualcameraDict.Count;
+        spawned.CameraId = id;
         spawned.name = "CCTV cam_" + spawned.CameraId;
         
         spawned.Initialize();
@@ -49,7 +58,11 @@ public class VirtualCameraManager : MonoBehaviour
 
     private void DestroyCamera(int cameraID)
     {
-        VirtualCameraSource spawned = virtualcameraDict.ContainsKey(cameraID) ? virtualcameraDict[cameraID] : null;
+        if (IsDictNull() && FindAnyObjectByType<VirtualCameraSource>() != null)
+        {
+            FillVirtualCameraDict();
+        }
+        VirtualCameraSource spawned = _virtualcameraDict.ContainsKey(cameraID) ? _virtualcameraDict[cameraID] : null;
         if (Application.isPlaying && spawned != null)
         {
             Destroy(spawned.gameObject);
@@ -76,18 +89,25 @@ public class VirtualCameraManager : MonoBehaviour
 
     private bool TryGetVirtualCamera(int cameraId)
     {
-        if (cameraId >= 0 && cameraId < virtualcameraDict.Count &&  virtualcameraDict[cameraId] != null)
+        if (_virtualcameraDict.ContainsKey(cameraId))
         {
+            Debug.Log("Yes");
             return true;
         }
+        Debug.Log("No");
         return false;
     }
 
     public VirtualCameraSource GetVirtualCamera(int cameraId)
     {
+        if (IsDictNull() && FindAnyObjectByType<VirtualCameraSource>() != null)
+        {
+            FillVirtualCameraDict();
+        }
+        
         if (TryGetVirtualCamera(cameraId))
         {
-            return virtualcameraDict[cameraId];
+            return _virtualcameraDict[cameraId];
         }
 
         return null;
@@ -96,13 +116,32 @@ public class VirtualCameraManager : MonoBehaviour
     
     private void AddCameraToDict(int cameraID, VirtualCameraSource virtualcamera)
     {
-        virtualcameraDict.Add(cameraID, virtualcamera);
+        _virtualcameraDict.Add(cameraID, virtualcamera);
     }
 
     private void RemoveCameraFromDict(int cameraID)
     {
-        virtualcameraDict.Remove(cameraID);
+        _virtualcameraDict.Remove(cameraID);
     }
-    
+
+    private bool IsDictNull()
+    {
+        if (_virtualcameraDict.Count == 0)
+        {
+            return true;
+        }
+        return false;
+    }
+
+    private void FillVirtualCameraDict()
+    {
+        var cameras = FindObjectsByType<VirtualCameraSource>(FindObjectsSortMode.InstanceID);
+        System.Array.Sort(cameras, (a, b) => a.CameraId.CompareTo(b.CameraId));
+
+        for (int i = 0; i < cameras.Length; i++)
+        {
+            _virtualcameraDict.Add(cameras[i].CameraId, cameras[i]);
+        }
+    }
     
 }
