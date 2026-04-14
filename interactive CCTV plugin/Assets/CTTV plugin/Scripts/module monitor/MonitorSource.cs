@@ -34,12 +34,13 @@ public class MonitorSource : MonoBehaviour
         yoloOverlayCanvas.MaxBoxes = max_boxes;
         yoloOverlayCanvas.DefaultBoxColor = BoxColor;
 
-        yoloRunner.InitializeFromMonitor(monitorID, ConfidenceThreshold);
-        yoloRunner.BindToCameraById();
+
     }
 
     void Start()
     {
         ApplySettings();
+        yoloRunner.InitializeFromMonitor(monitorID, ConfidenceThreshold);
+        yoloRunner.BindToCameraById();
     }
 }

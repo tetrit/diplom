@@ -4,6 +4,7 @@ using Unity.InferenceEngine;
 using UnityEngine.Rendering;
 using System.Threading.Tasks;
 using System.Collections;
+using System.Threading;
 
 public class YoloRunner : MonoBehaviour
 {
@@ -15,8 +16,8 @@ public class YoloRunner : MonoBehaviour
 
     public YoloOverlayCanvas overlayCanvas;
 
-    public int inputWidth = 640;
-    public int inputHeight = 640;
+    public int inputWidth = 416;
+    public int inputHeight = 416;
 
     [SerializeField, Range(0.1f, 1f)]
     private float confidenceThreshold = 0.25f;
@@ -25,6 +26,7 @@ public class YoloRunner : MonoBehaviour
     private float detectionInterval = 0.2f;
 
     private RenderTexture _sourceTexture;
+    private RenderTexture _resizedTexture;
     private Model runtimeModel;
     private Worker worker;
     private Tensor<float> inputTensor;
@@ -34,6 +36,8 @@ public class YoloRunner : MonoBehaviour
     private bool disposed = false;
     private bool initialized = false;
     private Coroutine bindCoroutine;
+    
+    private static readonly SemaphoreSlim _globalInferenceLock = new SemaphoreSlim(1, 1);
 
     public int CameraId => cameraId;
 
@@ -47,6 +51,9 @@ public class YoloRunner : MonoBehaviour
     {
         virtualCameraManager = FindObjectOfType<VirtualCameraManager>();
         InitModelIfNeeded();
+        
+        _resizedTexture = new RenderTexture(inputWidth, inputHeight, 0, RenderTextureFormat.ARGB32);
+        _resizedTexture.Create();
     }
 
     void Update()
@@ -113,17 +120,32 @@ public class YoloRunner : MonoBehaviour
     async Task RunDetectionAsync()
     {
         inferenceInFlight = true;
+        
+        await _globalInferenceLock.WaitAsync();
+
 
         try
         {
-            TextureConverter.ToTensor(_sourceTexture, inputTensor);
-            worker.Schedule(inputTensor);
+            if (disposed) return;
+
+            // Быстрый ресайз силами GPU
+            Graphics.Blit(_sourceTexture, _resizedTexture);
+            
+            TextureConverter.ToTensor(_resizedTexture, inputTensor);
+            
+            // Распределяем нагрузку на кадры
+            IEnumerator schedule = worker.ScheduleIterable(inputTensor);
+            int layerCount = 0;
+            while (schedule.MoveNext())
+            {
+                layerCount++;
+                if (layerCount % 30 == 0) await Task.Yield(); // Даем Unity подышать
+            }
 
             var outputTensor = worker.PeekOutput() as Tensor<float>;
             var cpuCopy = await outputTensor.ReadbackAndCloneAsync();
 
-            if (disposed || cpuCopy == null)
-                return;
+            if (disposed || cpuCopy == null) return;
 
             ProcessDetections(cpuCopy);
             cpuCopy.Dispose();
@@ -134,13 +156,16 @@ public class YoloRunner : MonoBehaviour
         }
         finally
         {
+            // Освобождаем очередь для следующей камеры
+            _globalInferenceLock.Release();
             inferenceInFlight = false;
         }
     }
 
     void ProcessDetections(Tensor<float> outputTensor)
     {
-        float[] data = outputTensor.DownloadToArray();
+        // ВНИМАНИЕ: Больше никакого DownloadToArray()! 
+        // Читаем напрямую из памяти (cpuCopy), что спасает сборщик мусора от перегрузок.
 
         int detections = 300;
         int valuesPerDetection = 6;
@@ -152,15 +177,17 @@ public class YoloRunner : MonoBehaviour
         {
             int offset = i * valuesPerDetection;
 
-            float x1 = data[offset + 0];
-            float y1 = data[offset + 1];
-            float x2 = data[offset + 2];
-            float y2 = data[offset + 3];
-            float conf = data[offset + 4];
-            float cls = data[offset + 5];
+            // Обращаемся напрямую к тензору по индексу
+            float conf = outputTensor[offset + 4]; 
 
             if (conf < confidenceThreshold)
                 continue;
+
+            float x1 = outputTensor[offset + 0];
+            float y1 = outputTensor[offset + 1];
+            float x2 = outputTensor[offset + 2];
+            float y2 = outputTensor[offset + 3];
+            float cls = outputTensor[offset + 5];
 
             int classId = Mathf.RoundToInt(cls);
             string className = classMapProvider != null
