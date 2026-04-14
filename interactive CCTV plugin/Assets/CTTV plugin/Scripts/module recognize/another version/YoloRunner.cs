@@ -1,77 +1,151 @@
 using Surveillance.Cameras;
 using UnityEngine;
 using Unity.InferenceEngine;
+using UnityEngine.Rendering;
+using System.Threading.Tasks;
+using System.Collections;
 
 public class YoloRunner : MonoBehaviour
 {
-    public ModelAsset modelAsset;
-    public VirtualCameraSource cameraSource;
-    private RenderTexture _sourceTexture;
-    public YoloClassMapProvider classMapProvider;
-    
-    //TODO: убрать это в другой скрипт
+    [SerializeField] private ModelAsset modelAsset;
+    [SerializeField] private VirtualCameraSource cameraSource;
+    [SerializeField] private YoloClassMapProvider classMapProvider;
+    [SerializeField] private VirtualCameraManager virtualCameraManager;
+    [SerializeField] private int cameraId;
+
     public YoloOverlayCanvas overlayCanvas;
+
     public int inputWidth = 640;
     public int inputHeight = 640;
-    public float confidenceThreshold = 0.25f;
 
-    [Header("Detection interval")]
-    public float detectionInterval = 0.3f; // раз в 0.3 сек
+    [SerializeField, Range(0.1f, 1f)]
+    private float confidenceThreshold = 0.25f;
 
+    [SerializeField]
+    private float detectionInterval = 0.2f;
+
+    private RenderTexture _sourceTexture;
     private Model runtimeModel;
     private Worker worker;
     private Tensor<float> inputTensor;
 
     private float nextDetectionTime = 0f;
+    private bool inferenceInFlight = false;
+    private bool disposed = false;
+    private bool initialized = false;
+    private Coroutine bindCoroutine;
 
-    void Start()
+    public int CameraId => cameraId;
+
+    public float ConfidenceThreshold
     {
-        cameraSource.ProfileProduced += setup;
-        runtimeModel = ModelLoader.Load(modelAsset);
-        worker = new Worker(runtimeModel, BackendType.GPUCompute);
-        inputTensor = new Tensor<float>(new TensorShape(1, 3, inputHeight, inputWidth));
+        get => confidenceThreshold;
+        set => confidenceThreshold = value;
+    }
 
-        foreach (var input in runtimeModel.inputs)
-            Debug.Log($"INPUT: {input.name} | shape = {input.shape}");
-
-        foreach (var output in runtimeModel.outputs)
-            Debug.Log($"OUTPUT: {output.name}");
+    void Awake()
+    {
+        virtualCameraManager = FindObjectOfType<VirtualCameraManager>();
+        InitModelIfNeeded();
     }
 
     void Update()
     {
-        
-        //TODO: короутина, ию ноу?
-        if (_sourceTexture == null)
-        {
+        if (!initialized)
             return;
-        }
 
+        if (_sourceTexture == null || inferenceInFlight)
+            return;
 
         if (Time.time < nextDetectionTime)
             return;
 
         nextDetectionTime = Time.time + detectionInterval;
-
-        RunDetection();
+        _ = RunDetectionAsync();
     }
 
-    void RunDetection()
+    private void InitModelIfNeeded()
     {
-        
-        TextureConverter.ToTensor(_sourceTexture, inputTensor);
-        worker.Schedule(inputTensor);
+        if (runtimeModel != null && worker != null && inputTensor != null)
+            return;
 
-        Tensor<float> outputTensor = worker.PeekOutput() as Tensor<float>;
+        runtimeModel = ModelLoader.Load(modelAsset);
+        worker = new Worker(runtimeModel, BackendType.GPUCompute);
+        inputTensor = new Tensor<float>(new TensorShape(1, 3, inputHeight, inputWidth));
+    }
+
+    public void InitializeFromMonitor(int newCameraId, float newConfidenceThreshold)
+    {
+        cameraId = newCameraId;
+        confidenceThreshold = newConfidenceThreshold;
+        initialized = true;
+    }
+
+    public void BindToCamera(VirtualCameraSource source)
+    {
+        if (source == null)
+        {
+            cameraSource = null;
+            _sourceTexture = null;
+            return;
+        }
+
+        if (source.CameraId != cameraId)
+            return;
+
+        cameraSource = source;
+
+        if (bindCoroutine != null)
+            StopCoroutine(bindCoroutine);
+
+        bindCoroutine = StartCoroutine(BindWhenReady(cameraSource));
+    }
+
+    public void BindToCameraById()
+    {
+        if (virtualCameraManager == null)
+            return;
+
+        var source = virtualCameraManager.GetVirtualCamera(cameraId);
+        BindToCamera(source);
+    }
+
+    async Task RunDetectionAsync()
+    {
+        inferenceInFlight = true;
+
+        try
+        {
+            TextureConverter.ToTensor(_sourceTexture, inputTensor);
+            worker.Schedule(inputTensor);
+
+            var outputTensor = worker.PeekOutput() as Tensor<float>;
+            var cpuCopy = await outputTensor.ReadbackAndCloneAsync();
+
+            if (disposed || cpuCopy == null)
+                return;
+
+            ProcessDetections(cpuCopy);
+            cpuCopy.Dispose();
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogException(e);
+        }
+        finally
+        {
+            inferenceInFlight = false;
+        }
+    }
+
+    void ProcessDetections(Tensor<float> outputTensor)
+    {
         float[] data = outputTensor.DownloadToArray();
-
-        Debug.Log($"Output shape: {outputTensor.shape}");
-        Debug.Log($"Output values count: {data.Length}");
 
         int detections = 300;
         int valuesPerDetection = 6;
         int found = 0;
-        
+
         overlayCanvas?.ClearBoxes();
 
         for (int i = 0; i < detections; i++)
@@ -87,36 +161,38 @@ public class YoloRunner : MonoBehaviour
 
             if (conf < confidenceThreshold)
                 continue;
-            
+
             int classId = Mathf.RoundToInt(cls);
             string className = classMapProvider != null
                 ? classMapProvider.GetClassName(classId)
                 : $"unknown_{classId}";
-            
-            
-            int drawIndex = found;
 
             overlayCanvas?.DrawBox(
-                drawIndex,
+                found,
                 x1, y1, x2, y2,
                 inputWidth, inputHeight,
                 className, conf
             );
 
             found++;
-            Debug.Log($"DET {found}: cls={className}, conf={conf:F2}, box=({x1:F1}, {y1:F1}) - ({x2:F1}, {y2:F1})");
         }
+    }
+
+    private IEnumerator BindWhenReady(VirtualCameraSource source)
+    {
+        while (source != null && source.OutputTexture == null)
+            yield return null;
+
+        if (source == null)
+            yield break;
+
+        _sourceTexture = source.OutputTexture;
     }
 
     void OnDisable()
     {
+        disposed = true;
         inputTensor?.Dispose();
         worker?.Dispose();
-    }
-    
-    void setup(VirtualCameraParamForPredict paramForPredict)
-    {
-        _sourceTexture = paramForPredict.renderTexture;
-        detectionInterval = 1f / paramForPredict.targetCaptureFps;
     }
 }

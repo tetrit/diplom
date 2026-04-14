@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -9,30 +10,57 @@ namespace Surveillance.Cameras
     public sealed class VirtualCameraSource : MonoBehaviour
     {
         [Header("Identity")]
-        [SerializeField] private string cameraId = "camera_01";
+        [SerializeField] private int cameraId = 1;
+
+        public int CameraId
+        {
+            get
+            {
+                return CameraId = cameraId;
+            }
+            set
+            {
+                cameraId = value;
+            }
+        }
 
         [Header("Config")]
         [SerializeField] private CameraCaptureProfileSO profile;
-        [SerializeField] private bool autoRegisterInService = true;
+
+        public CameraCaptureProfileSO Profile
+        {
+            get { return profile; }
+            set { profile = value; }
+        }
+
+        public int fps
+        {
+            get
+            {
+                return profile.targetCaptureFps;
+            }
+        }
+        
+
 
         [Header("Optional refs")]
         [SerializeField] private Camera sourceCamera;
 
         private RenderTexture _renderTexture;
+        public RenderTexture OutputTexture => _renderTexture;
         private bool _isInitialized;
         private bool _isStreaming;
         private float _nextCaptureTime;
         private long _frameIndex;
 
-        public string CameraId => cameraId;
-        public Camera UnityCamera => sourceCamera;
-        public RenderTexture OutputTexture => _renderTexture;
-        public bool IsStreaming => _isStreaming;
+
+        //public Camera UnityCamera => sourceCamera;
 
         public event Action<VirtualCameraFrame> FrameProduced;
         
         //TODO: событие перекинуть в менеджер камер
-        public event Action<VirtualCameraParamForPredict>  ProfileProduced; 
+        public event Action<VirtualCameraParamForPredict>  ProfileProduced;
+        
         
 
         private void Awake()
@@ -45,10 +73,7 @@ namespace Surveillance.Cameras
         {
             Initialize();
 
-            if (autoRegisterInService && ServiceLocator.TryGet<IVirtualCameraService>(out IVirtualCameraService service))
-            {
-                service.Register(this);
-            }
+
 
             VirtualCameraParamForPredict paramForPredict = new VirtualCameraParamForPredict(profile.width, profile.height, profile.targetCaptureFps, _renderTexture);
             ProfileProduced?.Invoke(paramForPredict);
@@ -67,16 +92,16 @@ namespace Surveillance.Cameras
 
             CaptureFrameNow();
         }
-
-        private void OnDisable()
-        {
-            if (ServiceLocator.TryGet<IVirtualCameraService>(out IVirtualCameraService service))
-            {
-                service.Unregister(this);
-            }
-        }
+        
 
         private void OnDestroy()
+        {
+            Destroy();
+
+        }
+        
+
+        private void Destroy()
         {
             ReleaseRenderTexture();
         }
@@ -89,15 +114,9 @@ namespace Surveillance.Cameras
             if (sourceCamera == null)
                 sourceCamera = GetComponent<Camera>();
 
-            if (string.IsNullOrWhiteSpace(cameraId))
-                cameraId = gameObject.name;
-
             ApplyProfile();
             CreateRenderTexture();
-
-            // Важный момент:
-            // камера рендерит кадр по нашему расписанию,
-            // а не молотит каждый frame без контроля.
+            
             sourceCamera.enabled = false;
             sourceCamera.targetTexture = _renderTexture;
 
@@ -203,6 +222,7 @@ namespace Surveillance.Cameras
             Destroy(_renderTexture);
             _renderTexture = null;
         }
+        
 
         private IEnumerator ReadbackCpuFrameCoroutine(Action<VirtualCameraCpuFrame> onReady)
         {
@@ -273,8 +293,7 @@ namespace Surveillance.Cameras
             if (sourceCamera == null)
                 sourceCamera = GetComponent<Camera>();
 
-            if (string.IsNullOrWhiteSpace(cameraId))
-                cameraId = gameObject.name;
+
         }
 #endif
     }

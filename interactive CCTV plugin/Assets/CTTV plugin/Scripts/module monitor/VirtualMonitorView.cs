@@ -49,13 +49,15 @@ namespace Surveillance.Monitors
         {
             if (targetRenderer == null)
                 return;
+            if (_propertyBlock != null)
+            {
+                targetRenderer.GetPropertyBlock(_propertyBlock, materialIndex);
 
-            targetRenderer.GetPropertyBlock(_propertyBlock, materialIndex);
+                _propertyBlock.SetTexture(_texturePropertyId, fallbackTexture);
+                _propertyBlock.SetColor(_colorPropertyId, noSignalTint);
 
-            _propertyBlock.SetTexture(_texturePropertyId, fallbackTexture);
-            _propertyBlock.SetColor(_colorPropertyId, noSignalTint);
-
-            targetRenderer.SetPropertyBlock(_propertyBlock, materialIndex);
+                targetRenderer.SetPropertyBlock(_propertyBlock, materialIndex);
+            }
         }
 
         public void SetActiveTint(Color color)

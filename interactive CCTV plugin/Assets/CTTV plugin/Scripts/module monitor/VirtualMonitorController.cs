@@ -7,28 +7,40 @@ namespace Surveillance.Monitors
     {
         [Header("Config")]
         [SerializeField] private VirtualMonitorProfileSO profile;
+        public VirtualMonitorProfileSO Profile
+        {
+            get { return profile; }
+            set { profile = value; }
+        }
+        [SerializeField]private VirtualCameraManager virtualCameraManager;
 
         [Header("Per-monitor source settings")]
-        [SerializeField] private string cameraId = "camera_01";
+        [SerializeField] private int cameraId;
+        public int CameraId
+        {
+            get { return cameraId; }
+            set { cameraId = value; }
+        }
+
 
         [Header("Scene refs")]
         [SerializeField] private VirtualMonitorView view;
+
         [SerializeField] private VirtualMonitorExternalInput externalInput;
 
-        private IVirtualCameraService cameraService;
-        private VirtualCameraSource boundCamera;
-        private Texture lastShownTexture;
-        private bool isStarted;
 
-        public string CameraId
-        {
-            get { return cameraId; }
-        }
+        private VirtualCameraSource boundCamera;
+
+        private Texture lastShownTexture;
+
+        private bool isStarted;
 
         private void Awake()
         {
             if (view == null)
                 view = GetComponent<VirtualMonitorView>();
+            
+            virtualCameraManager = FindObjectOfType<VirtualCameraManager>();
         }
 
         private void Start()
@@ -73,13 +85,14 @@ namespace Surveillance.Monitors
 
         private void OnDestroy()
         {
-            UnsubscribeFromCameraService();
+            if (virtualCameraManager != null)
+                virtualCameraManager.cameraInitializedEvent -= OnCameraRegistered;
 
             if (externalInput != null)
                 externalInput.TextureChanged -= OnExternalTextureChanged;
         }
 
-        public void SetCameraId(string newCameraId)
+        public void SetCameraId(int newCameraId)
         {
             cameraId = newCameraId;
             RebindCamera();
@@ -87,15 +100,14 @@ namespace Surveillance.Monitors
 
         private void BindCameraMode()
         {
-            if (!ServiceLocator.TryGet<IVirtualCameraService>(out cameraService))
+            if (virtualCameraManager == null)
             {
-                Debug.LogWarning("[" + name + "] IVirtualCameraService is not registered.");
                 ShowFallback();
                 return;
             }
 
-            cameraService.CameraRegistered += OnCameraRegistered;
-            cameraService.CameraUnregistered += OnCameraUnregistered;
+            virtualCameraManager.cameraInitializedEvent -= OnCameraRegistered;
+            virtualCameraManager.cameraInitializedEvent += OnCameraRegistered;
 
             RebindCamera();
         }
@@ -105,21 +117,18 @@ namespace Surveillance.Monitors
             boundCamera = null;
             lastShownTexture = null;
 
-            if (cameraService == null || profile == null)
+            if (virtualCameraManager == null || profile == null)
             {
                 ShowFallback();
                 return;
             }
 
-            VirtualCameraSource camera;
-            if (cameraService.TryGetCamera(cameraId, out camera))
-            {
-                boundCamera = camera;
-                UpdateCameraTexture();
-                return;
-            }
+            boundCamera = virtualCameraManager.GetVirtualCamera(cameraId);
 
-            ShowFallback();
+            if (boundCamera != null)
+                UpdateCameraTexture();
+            else
+                ShowFallback();
         }
 
         private void BindExternalMode()
@@ -209,7 +218,7 @@ namespace Surveillance.Monitors
 
             if (source.CameraId != cameraId)
                 return;
-
+            Debug.Log(source.CameraId);
             boundCamera = source;
             UpdateCameraTexture();
         }
@@ -226,16 +235,7 @@ namespace Surveillance.Monitors
             lastShownTexture = null;
             ShowFallback();
         }
-
-        private void UnsubscribeFromCameraService()
-        {
-            if (cameraService == null)
-                return;
-
-            cameraService.CameraRegistered -= OnCameraRegistered;
-            cameraService.CameraUnregistered -= OnCameraUnregistered;
-            cameraService = null;
-        }
+        
 
         private void ShowFallback()
         {

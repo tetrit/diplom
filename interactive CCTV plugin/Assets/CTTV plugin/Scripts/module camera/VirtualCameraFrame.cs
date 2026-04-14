@@ -4,7 +4,7 @@ namespace Surveillance.Cameras
 {
     public readonly struct VirtualCameraFrame
     {
-        public readonly string CameraId;
+        public readonly int CameraId;
         public readonly long FrameIndex;
         public readonly float Timestamp;
         public readonly int Width;
@@ -12,7 +12,7 @@ namespace Surveillance.Cameras
         public readonly RenderTexture Texture;
 
         public VirtualCameraFrame(
-            string cameraId,
+            int cameraId,
             long frameIndex,
             float timestamp,
             RenderTexture texture)
@@ -28,13 +28,13 @@ namespace Surveillance.Cameras
 
     public readonly struct VirtualCameraCpuFrame
     {
-        public readonly string CameraId;
+        public readonly int CameraId;
         public readonly long FrameIndex;
         public readonly float Timestamp;
         public readonly Texture2D Texture;
 
         public VirtualCameraCpuFrame(
-            string cameraId,
+            int cameraId,
             long frameIndex,
             float timestamp,
             Texture2D texture)
