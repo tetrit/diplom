@@ -10,7 +10,7 @@ public class MonitorEditor : Editor
         
         MonitorSource monitorSource = (MonitorSource)target;
 
-        if (GUILayout.Button("Show Monitor"))
+        if (GUILayout.Button("Apply settings"))
         {
             monitorSource.ApplySettings();
         }

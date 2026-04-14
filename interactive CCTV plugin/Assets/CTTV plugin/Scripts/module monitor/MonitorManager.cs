@@ -34,11 +34,17 @@ public class MonitorManager : MonoBehaviour
         
         MonitorSource monitor = Instantiate(MonitorPrefab);
         monitor.MonitorID = id;
+        monitor.name = "Monitor_" + id;
         _monitorsDict.Add(id, monitor);
     }
 
     public void RemoveMonitor(int id)
     {
+        if (_monitorsDict.Count == 0 && FindObjectOfType<MonitorSource>() != null)
+        {
+            RefreshMonitorDictionary();
+        }
+        
         if (_monitorsDict.ContainsKey(id))
         {
             MonitorSource spawned = _monitorsDict.ContainsKey(id) ? _monitorsDict[id] : null;
