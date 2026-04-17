@@ -1,18 +1,17 @@
 using UnityEngine;
 
 namespace Surveillance.Monitors
-{
-    [CreateAssetMenu(
+{[CreateAssetMenu(
         fileName = "VirtualMonitorProfile",
         menuName = "Surveillance/Virtual Monitor Profile")]
     public class VirtualMonitorProfileSO : ScriptableObject
     {
-        [Header("Source")]
-        public VirtualMonitorSourceMode sourceMode = VirtualMonitorSourceMode.CameraStream;
-
         [Header("Behaviour")]
         public bool showFallbackWhenSourceMissing = true;
         public bool autoRebind = true;
         public bool startEnabled = true;
+
+        [Header("Visuals")]
+        public Texture fallbackTexture;
     }
 }
