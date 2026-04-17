@@ -95,7 +95,7 @@ namespace Surveillance.Monitors
         public void SetCameraId(int newCameraId)
         {
             cameraId = newCameraId;
-            RebindCamera();
+            bindCamera();
         }
 
         private void BindCameraMode()
@@ -109,10 +109,10 @@ namespace Surveillance.Monitors
             virtualCameraManager.cameraInitializedEvent -= OnCameraRegistered;
             virtualCameraManager.cameraInitializedEvent += OnCameraRegistered;
 
-            RebindCamera();
+            bindCamera();
         }
 
-        private void RebindCamera()
+        private void bindCamera()
         {
             boundCamera = null;
             lastShownTexture = null;
@@ -151,7 +151,7 @@ namespace Surveillance.Monitors
             if (boundCamera == null)
             {
                 if (profile != null && profile.autoRebind)
-                    RebindCamera();
+                    bindCamera();
                 else
                     ShowFallback();
 

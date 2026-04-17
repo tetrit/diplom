@@ -10,8 +10,7 @@ namespace Surveillance.Cameras
     public sealed class VirtualCameraSource : MonoBehaviour
     {
         [Header("Identity")]
-        [SerializeField] private int cameraId = 1;
-
+        [Min(0)][SerializeField] private int cameraId;
         public int CameraId
         {
             get
@@ -24,27 +23,28 @@ namespace Surveillance.Cameras
             }
         }
 
-        [Header("Config")]
-        [SerializeField] private CameraCaptureProfileSO profile;
+        [Header("Настройки")]
 
-        public CameraCaptureProfileSO Profile
-        {
-            get { return profile; }
-            set { profile = value; }
-        }
+        [Header("Текстура рендера")]
+        [Min(64)][SerializeField] private int width = 640;
+        [Min(64)][SerializeField] private int height = 360;
+        [Min(0)][SerializeField] private int depthBits = 24;
+        [SerializeField]public RenderTextureFormat renderTextureFormat = RenderTextureFormat.ARGB32;
 
-        public int fps
-        {
-            get
-            {
-                return profile.targetCaptureFps;
-            }
-        }
+        [Header("захват")]
+        [Min(1)][SerializeField] private int targetCaptureFps = 10;
+        public bool startStreaming = true;
+
+        [Header("Параметры камеры")]
+        [Range(10f, 120f)][SerializeField] private float fieldOfView = 60f;
+        [Min(0.01f)][SerializeField] private float nearClipPlane = 0.1f;
+        [Min(1f)][SerializeField] private float farClipPlane = 1000f;
+        [SerializeField]private CameraClearFlags clearFlags = CameraClearFlags.Skybox;
+        [SerializeField]private Color backgroundColor = Color.black;
+        [SerializeField]private bool allowHdr = false;
+        [SerializeField]private bool allowMsaa = false;
         
-
-
-        [Header("Optional refs")]
-        [SerializeField] private Camera sourceCamera;
+        private Camera _sourceCamera;
 
         private RenderTexture _renderTexture;
         public RenderTexture OutputTexture => _renderTexture;
@@ -54,19 +54,16 @@ namespace Surveillance.Cameras
         private long _frameIndex;
 
 
-        //public Camera UnityCamera => sourceCamera;
-
-        public event Action<VirtualCameraFrame> FrameProduced;
         
-        //TODO: событие перекинуть в менеджер камер
+        public event Action<VirtualCameraFrame> FrameProduced;
         public event Action<VirtualCameraParamForPredict>  ProfileProduced;
         
         
 
         private void Awake()
         {
-            if (sourceCamera == null)
-                sourceCamera = GetComponent<Camera>();
+            if (_sourceCamera == null)
+                _sourceCamera = GetComponent<Camera>();
         }
 
         private void Start()
@@ -75,7 +72,7 @@ namespace Surveillance.Cameras
 
 
 
-            VirtualCameraParamForPredict paramForPredict = new VirtualCameraParamForPredict(profile.width, profile.height, profile.targetCaptureFps, _renderTexture);
+            VirtualCameraParamForPredict paramForPredict = new VirtualCameraParamForPredict(width, height, targetCaptureFps, _renderTexture);
             ProfileProduced?.Invoke(paramForPredict);
         }
 
@@ -111,16 +108,15 @@ namespace Surveillance.Cameras
             if (_isInitialized)
                 return;
 
-            if (sourceCamera == null)
-                sourceCamera = GetComponent<Camera>();
-
-            ApplyProfile();
+            if (_sourceCamera == null)
+                _sourceCamera = GetComponent<Camera>();
+            
             CreateRenderTexture();
             
-            sourceCamera.enabled = false;
-            sourceCamera.targetTexture = _renderTexture;
+            _sourceCamera.enabled = false;
+            _sourceCamera.targetTexture = _renderTexture;
 
-            _isStreaming = profile == null || profile.startStreaming;
+            _isStreaming = startStreaming;
             _nextCaptureTime = Time.unscaledTime;
             _isInitialized = true;
         }
@@ -133,10 +129,10 @@ namespace Surveillance.Cameras
 
         public void CaptureFrameNow()
         {
-            if (!_isInitialized || sourceCamera == null || _renderTexture == null)
+            if (!_isInitialized || _sourceCamera == null || _renderTexture == null)
                 return;
 
-            sourceCamera.Render();
+            _sourceCamera.Render();
 
             _frameIndex++;
 
@@ -157,51 +153,61 @@ namespace Surveillance.Cameras
             StartCoroutine(ReadbackCpuFrameCoroutine(onReady));
         }
 
-        public void RebuildFromProfile()
-        {
-            ApplyProfile();
-            CreateRenderTexture();
 
-            if (sourceCamera != null)
-                sourceCamera.targetTexture = _renderTexture;
-
-            _nextCaptureTime = Time.unscaledTime;
-        }
 
         public int GetTargetCaptureFps()
         {
-            return profile != null ? Mathf.Max(1, profile.targetCaptureFps) : 10;
+            return  Mathf.Max(1, targetCaptureFps);
         }
 
-        private void ApplyProfile()
+        public void ApplyProfile(CameraCaptureProfileSO profile)
         {
-            if (sourceCamera == null)
-                return;
+            if (profile == null) return;
 
-            if (profile == null)
-                return;
+        
+            width = profile.width;
+            height = profile.height;
+            depthBits = profile.depthBits;
+            renderTextureFormat = profile.renderTextureFormat;
 
-            sourceCamera.fieldOfView = profile.fieldOfView;
-            sourceCamera.nearClipPlane = profile.nearClipPlane;
-            sourceCamera.farClipPlane = profile.farClipPlane;
-            sourceCamera.clearFlags = profile.clearFlags;
-            sourceCamera.backgroundColor = profile.backgroundColor;
-            sourceCamera.allowHDR = profile.allowHdr;
-            sourceCamera.allowMSAA = profile.allowMsaa;
+            targetCaptureFps = profile.targetCaptureFps;
+            startStreaming = profile.startStreaming;
+
+            fieldOfView = profile.fieldOfView;
+            nearClipPlane = profile.nearClipPlane;
+            farClipPlane = profile.farClipPlane;
+            clearFlags = profile.clearFlags;
+            backgroundColor = profile.backgroundColor;
+            allowHdr = profile.allowHdr;
+            allowMsaa = profile.allowMsaa;
+            
+            ApplyCameraSettings();
         }
+
+
+        private void ApplyCameraSettings()
+        {
+            if (_sourceCamera == null)
+                _sourceCamera = GetComponent<Camera>();
+
+            if (_sourceCamera == null)
+                return;
+
+            _sourceCamera.fieldOfView = fieldOfView;
+            _sourceCamera.nearClipPlane = nearClipPlane;
+            _sourceCamera.farClipPlane = farClipPlane;
+            _sourceCamera.clearFlags = clearFlags;
+            _sourceCamera.backgroundColor = backgroundColor;
+            _sourceCamera.allowHDR = allowHdr;
+            _sourceCamera.allowMSAA = allowMsaa;
+        }
+        
 
         private void CreateRenderTexture()
         {
             ReleaseRenderTexture();
-
-            int width = profile != null ? profile.width : 640;
-            int height = profile != null ? profile.height : 360;
-            int depthBits = profile != null ? profile.depthBits : 24;
-            RenderTextureFormat format = profile != null
-                ? profile.renderTextureFormat
-                : RenderTextureFormat.ARGB32;
-
-            _renderTexture = new RenderTexture(width, height, depthBits, format)
+            
+            _renderTexture = new RenderTexture(width, height, depthBits, renderTextureFormat)
             {
                 name = $"RT_{cameraId}",
                 useMipMap = false,
@@ -226,8 +232,7 @@ namespace Surveillance.Cameras
 
         private IEnumerator ReadbackCpuFrameCoroutine(Action<VirtualCameraCpuFrame> onReady)
         {
-            // Актуализируем изображение перед чтением.
-            sourceCamera.Render();
+            _sourceCamera.Render();
 
 #if UNITY_2018_2_OR_NEWER
             if (SystemInfo.supportsAsyncGPUReadback)
@@ -290,8 +295,8 @@ namespace Surveillance.Cameras
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            if (sourceCamera == null)
-                sourceCamera = GetComponent<Camera>();
+            if (_sourceCamera == null)
+                _sourceCamera = GetComponent<Camera>();
 
 
         }

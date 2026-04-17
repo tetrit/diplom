@@ -127,13 +127,11 @@ public class YoloRunner : MonoBehaviour
         try
         {
             if (disposed) return;
-
-            // Быстрый ресайз силами GPU
+            
             Graphics.Blit(_sourceTexture, _resizedTexture);
             
             TextureConverter.ToTensor(_resizedTexture, inputTensor);
             
-            // Распределяем нагрузку на кадры
             IEnumerator schedule = worker.ScheduleIterable(inputTensor);
             int layerCount = 0;
             while (schedule.MoveNext())
@@ -156,7 +154,6 @@ public class YoloRunner : MonoBehaviour
         }
         finally
         {
-            // Освобождаем очередь для следующей камеры
             _globalInferenceLock.Release();
             inferenceInFlight = false;
         }
@@ -164,8 +161,6 @@ public class YoloRunner : MonoBehaviour
 
     void ProcessDetections(Tensor<float> outputTensor)
     {
-        // ВНИМАНИЕ: Больше никакого DownloadToArray()! 
-        // Читаем напрямую из памяти (cpuCopy), что спасает сборщик мусора от перегрузок.
 
         int detections = 300;
         int valuesPerDetection = 6;
@@ -176,8 +171,7 @@ public class YoloRunner : MonoBehaviour
         for (int i = 0; i < detections; i++)
         {
             int offset = i * valuesPerDetection;
-
-            // Обращаемся напрямую к тензору по индексу
+            
             float conf = outputTensor[offset + 4]; 
 
             if (conf < confidenceThreshold)

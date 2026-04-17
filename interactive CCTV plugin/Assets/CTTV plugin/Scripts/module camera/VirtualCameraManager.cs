@@ -6,19 +6,18 @@ using UnityEngine;
 
 public class VirtualCameraManager : MonoBehaviour
 {
-    
+    [Header("Настройки камеры")]
     [SerializeField] private VirtualCameraSource cameraPrefab;
+    [SerializeField]private int cameraIDToRemove = 0;
+    [SerializeField] private CameraCaptureProfileSO profile;
     public VirtualCameraSource CameraPrefab{get{return cameraPrefab;}}
+
+
     //[SerializeField]private List<VirtualCameraSource> virtualCameraList = new List<VirtualCameraSource>();
-    
-    /*
-     
-     TODO: сделай ещё bootstraper, который будет сам манагер назначать
-    */
+
+
     private Dictionary<int, VirtualCameraSource> _virtualcameraDict = new Dictionary<int, VirtualCameraSource>();
 
-
-    [SerializeField]private int cameraIDToRemove;
 
     public int CameraIDToRemove
     {
@@ -30,7 +29,7 @@ public class VirtualCameraManager : MonoBehaviour
 
     
 
-    private void SpawnCamera(VirtualCameraSource virtualcamera)
+    private void AddCamera(VirtualCameraSource virtualcamera)
     {
 
         int id = 0;
@@ -48,6 +47,11 @@ public class VirtualCameraManager : MonoBehaviour
         spawned.CameraId = id;
         spawned.name = "CCTV cam_" + spawned.CameraId;
         
+        if (profile != null)
+        {
+            spawned.ApplyProfile(profile);
+        }
+        
         spawned.Initialize();
         
         AddCameraToDict(spawned.CameraId, spawned);
@@ -56,7 +60,7 @@ public class VirtualCameraManager : MonoBehaviour
         
     }
 
-    private void DestroyCamera(int cameraID)
+    private void removeCamera(int cameraID)
     {
         if (IsDictNull() && FindAnyObjectByType<VirtualCameraSource>() != null)
         {
@@ -78,13 +82,13 @@ public class VirtualCameraManager : MonoBehaviour
 
     public void SpawnCameraEditor(VirtualCameraSource virtualcamera)
     {
-        SpawnCamera(virtualcamera);
+        AddCamera(virtualcamera);
 
     }
 
     public void DestroyCameraEditor(int cameraID)
     {
-        DestroyCamera(cameraID);
+        removeCamera(cameraID);
     }
 
     private bool TryGetVirtualCamera(int cameraId)
