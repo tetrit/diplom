@@ -10,12 +10,11 @@ public class VirtualCameraManager : MonoBehaviour
     [SerializeField] private VirtualCameraSource cameraPrefab;
     [SerializeField]private int cameraIDToRemove = 0;
     [SerializeField] private CameraCaptureProfileSO profile;
+    
+    
+    [Space]
+    [SerializeField] private Transform SpawnPoint;
     public VirtualCameraSource CameraPrefab{get{return cameraPrefab;}}
-
-
-    //[SerializeField]private List<VirtualCameraSource> virtualCameraList = new List<VirtualCameraSource>();
-
-
     private Dictionary<int, VirtualCameraSource> _virtualcameraDict = new Dictionary<int, VirtualCameraSource>();
 
 
@@ -25,7 +24,6 @@ public class VirtualCameraManager : MonoBehaviour
     }
     public event Action<VirtualCameraSource> cameraInitializedEvent;
     
-    public event Action<int> cameraDestroyedEvent;
 
     
 
@@ -43,7 +41,7 @@ public class VirtualCameraManager : MonoBehaviour
             id++;
         }
         
-        VirtualCameraSource spawned = Instantiate(virtualcamera);
+        VirtualCameraSource spawned = Instantiate(virtualcamera, SpawnPoint.position, SpawnPoint.rotation);
         spawned.CameraId = id;
         spawned.name = "CCTV cam_" + spawned.CameraId;
         
@@ -77,7 +75,6 @@ public class VirtualCameraManager : MonoBehaviour
         }
 
         RemoveCameraFromDict(cameraID);
-        cameraDestroyedEvent?.Invoke(cameraID);
     }
 
     public void SpawnCameraEditor(VirtualCameraSource virtualcamera)

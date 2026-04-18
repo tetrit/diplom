@@ -6,6 +6,7 @@ public class MonitorManager : MonoBehaviour
 {[Header("Настройки создания монитора")]
     [SerializeField] private MonitorSource monitorPrefab;
     [SerializeField] private VirtualMonitorProfileSO defaultProfile;
+    [SerializeField] private Transform SpawnPoint;
 
     [Space]
     public int MonitorIDToRemove = -1;
@@ -32,7 +33,7 @@ public class MonitorManager : MonoBehaviour
             id++;
         }
         
-        MonitorSource monitor = Instantiate(MonitorPrefab);
+        MonitorSource monitor = Instantiate(MonitorPrefab, SpawnPoint.position, SpawnPoint.rotation);
         monitor.MonitorID = id;
         monitor.TargetCameraId = id;
         monitor.name = "Monitor_" + id;
