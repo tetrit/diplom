@@ -23,9 +23,15 @@ public class VirtualCameraManager : MonoBehaviour
         get { return cameraIDToRemove; }
     }
     public event Action<VirtualCameraSource> cameraInitializedEvent;
-    
+    public event Action<int> cameraRemovedEvent;
 
-    
+    void Start()
+    {
+        if (IsDictNull() && FindAnyObjectByType<VirtualCameraSource>() != null)
+        {
+            FillVirtualCameraDict();
+        }
+    }
 
     private void AddCamera(VirtualCameraSource virtualcamera)
     {
@@ -75,6 +81,8 @@ public class VirtualCameraManager : MonoBehaviour
         }
 
         RemoveCameraFromDict(cameraID);
+        
+        cameraRemovedEvent?.Invoke(cameraID);
     }
 
     public void SpawnCameraEditor(VirtualCameraSource virtualcamera)
@@ -109,6 +117,8 @@ public class VirtualCameraManager : MonoBehaviour
         if (TryGetVirtualCamera(cameraId))
         {
             return _virtualcameraDict[cameraId];
+
+            
         }
 
         return null;
@@ -136,8 +146,7 @@ public class VirtualCameraManager : MonoBehaviour
 
     private void FillVirtualCameraDict()
     {
-        var cameras = FindObjectsByType<VirtualCameraSource>(FindObjectsSortMode.InstanceID);
-        System.Array.Sort(cameras, (a, b) => a.CameraId.CompareTo(b.CameraId));
+        var cameras = FindObjectsByType<VirtualCameraSource>(FindObjectsSortMode.None);
 
         for (int i = 0; i < cameras.Length; i++)
         {

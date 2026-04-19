@@ -5,14 +5,14 @@ using UnityEngine;
 public class MonitorSource : MonoBehaviour
 {
     [Header("Базовые настройки")]
-    [SerializeField] private int monitorID;
-    [SerializeField] private int targetCameraId;
-    [SerializeField] private VirtualMonitorProfileSO profile;
-
+    [SerializeField]private int monitorID;
+    [SerializeField]public int targetCameraId;
+    [SerializeField]private VirtualMonitorProfileSO profile;
+    [Space]
     [Header("Настройки рендера (View)")]
-    [SerializeField] private Renderer targetRenderer;
-    [SerializeField] private int materialIndex = 0;
-    [SerializeField] private string texturePropertyName = "_BaseMap"; // _BaseMap для URP, _MainTex для Standard
+    [SerializeField]private Renderer targetRenderer;
+    [SerializeField]private int materialIndex = 0;
+    [SerializeField]private string texturePropertyName = "_BaseMap";
 
     private VirtualCameraManager _cameraManager;
     private VirtualCameraSource _boundCamera;
@@ -44,7 +44,6 @@ public class MonitorSource : MonoBehaviour
 
     private void Awake()
     {
-        // Инициализируем компоненты для рендера сразу
         _propertyBlock = new MaterialPropertyBlock();
         _texturePropertyId = Shader.PropertyToID(texturePropertyName);
 
@@ -56,15 +55,15 @@ public class MonitorSource : MonoBehaviour
     {
         _cameraManager = FindFirstObjectByType<VirtualCameraManager>();
         _isStarted = true;
-        
         ApplySettings();
+        
     }
 
     private void Update()
     {
         if (!_isStarted || profile == null) return;
         
-        UpdateCameraTexture();
+
     }
 
     private void OnDestroy()
@@ -81,7 +80,7 @@ public class MonitorSource : MonoBehaviour
 
     public void ApplySettings()
     {
-        if (!_isStarted) return; // Ждем Start(), если настройки меняются из Awake других скриптов
+        if (!_isStarted) return; 
 
         if (profile == null || !profile.startEnabled)
         {
@@ -100,7 +99,7 @@ public class MonitorSource : MonoBehaviour
             return;
         }
 
-        // Переподписываемся на события, чтобы избежать дубликатов
+        
         _cameraManager.cameraInitializedEvent -= OnCameraRegistered;
         _cameraManager.cameraInitializedEvent += OnCameraRegistered;
 
@@ -156,7 +155,6 @@ public class MonitorSource : MonoBehaviour
     {
         if (targetRenderer == null || texture == null) return;
         
-        // Оптимизация: не обновляем материал, если текстура не изменилась
         if (_lastShownTexture == texture) return;
 
         targetRenderer.GetPropertyBlock(_propertyBlock, materialIndex);

@@ -5,18 +5,7 @@ namespace Surveillance.Cameras
     [RequireComponent(typeof(Camera))]
     public sealed class VirtualCameraSource : MonoBehaviour
     {
-        private int cameraId;
-        public int CameraId
-        {
-            get
-            {
-                return CameraId = cameraId;
-            }
-            set
-            {
-                cameraId = value;
-            }
-        }
+        public int CameraId;
 
         [Header("Настройки")]
 
@@ -163,7 +152,7 @@ namespace Surveillance.Cameras
             
             _renderTexture = new RenderTexture(width, height, depthBits, renderTextureFormat)
             {
-                name = $"RT_{cameraId}",
+                name = $"RT_{CameraId}",
                 useMipMap = false,
                 autoGenerateMips = false
             };

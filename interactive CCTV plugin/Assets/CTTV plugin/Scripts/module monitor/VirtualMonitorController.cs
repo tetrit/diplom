@@ -8,7 +8,7 @@ namespace Surveillance.Monitors
         private VirtualMonitorProfileSO _profile;
         private int _targetCameraId;
 
-        [SerializeField] private VirtualMonitorView _view; // Можно назначить вручную
+        [SerializeField] private VirtualMonitorView _view;
         private VirtualCameraManager _virtualCameraManager;
         private VirtualCameraSource _boundCamera;
         private Texture _lastShownTexture;
@@ -19,7 +19,6 @@ namespace Surveillance.Monitors
             _targetCameraId = cameraId;
             _profile = profile;
             
-            // Ищем View даже в дочерних объектах (например, на самой модели экрана)
             if (_view == null)
                 _view = GetComponentInChildren<VirtualMonitorView>();
             
