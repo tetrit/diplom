@@ -5,160 +5,82 @@ namespace Surveillance.Monitors
 {
     public sealed class VirtualMonitorController : MonoBehaviour
     {
-        [Header("Config")]
-        [SerializeField] private VirtualMonitorProfileSO profile;
-        public VirtualMonitorProfileSO Profile
+        private VirtualMonitorProfileSO _profile;
+        private int _targetCameraId;
+
+        [SerializeField] private VirtualMonitorView _view;
+        private VirtualCameraManager _virtualCameraManager;
+        private VirtualCameraSource _boundCamera;
+        private Texture _lastShownTexture;
+        private bool _isStarted;
+
+        public void Initialize(int cameraId, VirtualMonitorProfileSO profile)
         {
-            get { return profile; }
-            set { profile = value; }
-        }
-        [SerializeField]private VirtualCameraManager virtualCameraManager;
-
-        [Header("Per-monitor source settings")]
-        [SerializeField] private int cameraId;
-        public int CameraId
-        {
-            get { return cameraId; }
-            set { cameraId = value; }
-        }
-
-
-        [Header("Scene refs")]
-        [SerializeField] private VirtualMonitorView view;
-
-        [SerializeField] private VirtualMonitorExternalInput externalInput;
-
-
-        private VirtualCameraSource boundCamera;
-
-        private Texture lastShownTexture;
-
-        private bool isStarted;
-
-        private void Awake()
-        {
-            if (view == null)
-                view = GetComponent<VirtualMonitorView>();
+            _targetCameraId = cameraId;
+            _profile = profile;
             
-            virtualCameraManager = FindObjectOfType<VirtualCameraManager>();
-        }
+            if (_view == null)
+                _view = GetComponentInChildren<VirtualMonitorView>();
+            
+            if (_virtualCameraManager == null)
+                _virtualCameraManager = FindFirstObjectByType<VirtualCameraManager>();
+            
+            _isStarted = true;
 
-        private void Start()
-        {
-            isStarted = true;
-
-            if (profile == null)
-            {
-                Debug.LogWarning("[" + name + "] VirtualMonitorProfileSO is not assigned.");
-                ShowFallback();
-                return;
-            }
-
-            if (view == null)
-            {
-                Debug.LogError("[" + name + "] VirtualMonitorView is not assigned.");
-                return;
-            }
-
-            if (!profile.startEnabled)
+            if (_profile == null || !_profile.startEnabled)
             {
                 ShowFallback();
                 return;
             }
 
-            if (profile.sourceMode == VirtualMonitorSourceMode.CameraStream)
-                BindCameraMode();
-            else
-                BindExternalMode();
+            BindCamera();
         }
 
         private void Update()
         {
-            if (!isStarted || profile == null)
+            if (!_isStarted || _profile == null)
                 return;
 
-            if (profile.sourceMode == VirtualMonitorSourceMode.CameraStream)
-                UpdateCameraTexture();
-            else
-                UpdateExternalTexture();
+            UpdateCameraTexture();
         }
 
         private void OnDestroy()
         {
-            if (virtualCameraManager != null)
-                virtualCameraManager.cameraInitializedEvent -= OnCameraRegistered;
-
-            if (externalInput != null)
-                externalInput.TextureChanged -= OnExternalTextureChanged;
+            if (_virtualCameraManager != null)
+                _virtualCameraManager.cameraInitializedEvent -= OnCameraRegistered;
         }
 
-        public void SetCameraId(int newCameraId)
+        private void BindCamera()
         {
-            cameraId = newCameraId;
-            RebindCamera();
-        }
-
-        private void BindCameraMode()
-        {
-            if (virtualCameraManager == null)
+            if (_virtualCameraManager == null)
             {
                 ShowFallback();
                 return;
             }
 
-            virtualCameraManager.cameraInitializedEvent -= OnCameraRegistered;
-            virtualCameraManager.cameraInitializedEvent += OnCameraRegistered;
+            _virtualCameraManager.cameraInitializedEvent -= OnCameraRegistered;
+            _virtualCameraManager.cameraInitializedEvent += OnCameraRegistered;
 
-            RebindCamera();
-        }
+            _boundCamera = _virtualCameraManager.GetVirtualCamera(_targetCameraId);
 
-        private void RebindCamera()
-        {
-            boundCamera = null;
-            lastShownTexture = null;
-
-            if (virtualCameraManager == null || profile == null)
-            {
-                ShowFallback();
-                return;
-            }
-
-            boundCamera = virtualCameraManager.GetVirtualCamera(cameraId);
-
-            if (boundCamera != null)
+            if (_boundCamera != null)
                 UpdateCameraTexture();
             else
                 ShowFallback();
         }
 
-        private void BindExternalMode()
-        {
-            if (externalInput == null)
-            {
-                Debug.LogWarning("[" + name + "] ExternalInput mode selected, but VirtualMonitorExternalInput is not assigned.");
-                ShowFallback();
-                return;
-            }
-
-            externalInput.TextureChanged -= OnExternalTextureChanged;
-            externalInput.TextureChanged += OnExternalTextureChanged;
-
-            UpdateExternalTexture();
-        }
-
         private void UpdateCameraTexture()
         {
-            if (boundCamera == null)
+            if (_boundCamera == null)
             {
-                if (profile != null && profile.autoRebind)
-                    RebindCamera();
+                if (_profile != null && _profile.autoRebind)
+                    BindCamera();
                 else
                     ShowFallback();
-
                 return;
             }
 
-            Texture texture = boundCamera.OutputTexture;
+            Texture texture = _boundCamera.OutputTexture;
 
             if (texture == null)
             {
@@ -166,94 +88,31 @@ namespace Surveillance.Monitors
                 return;
             }
 
-            if (lastShownTexture != texture)
+            if (_lastShownTexture != texture)
             {
-                view.Show(texture);
-                lastShownTexture = texture;
+                if (_view != null) _view.Show(texture);
+                _lastShownTexture = texture;
             }
-        }
-
-        private void UpdateExternalTexture()
-        {
-            if (externalInput == null)
-            {
-                ShowFallback();
-                return;
-            }
-
-            Texture texture = externalInput.CurrentTexture;
-
-            if (texture == null)
-            {
-                ShowFallback();
-                return;
-            }
-
-            if (lastShownTexture != texture)
-            {
-                view.Show(texture);
-                lastShownTexture = texture;
-            }
-        }
-
-        private void OnExternalTextureChanged(Texture texture)
-        {
-            if (texture == null)
-            {
-                ShowFallback();
-                return;
-            }
-
-            view.Show(texture);
-            lastShownTexture = texture;
         }
 
         private void OnCameraRegistered(VirtualCameraSource source)
         {
-            if (profile == null || source == null)
-                return;
+            if (_profile == null || source == null) return;
+            if (source.CameraId != _targetCameraId) return;
 
-            if (profile.sourceMode != VirtualMonitorSourceMode.CameraStream)
-                return;
-
-            if (source.CameraId != cameraId)
-                return;
-            Debug.Log(source.CameraId);
-            boundCamera = source;
+            _boundCamera = source;
             UpdateCameraTexture();
         }
 
-        private void OnCameraUnregistered(VirtualCameraSource source)
-        {
-            if (source == null || boundCamera == null)
-                return;
-
-            if (source != boundCamera)
-                return;
-
-            boundCamera = null;
-            lastShownTexture = null;
-            ShowFallback();
-        }
-        
-
         private void ShowFallback()
         {
-            lastShownTexture = null;
+            _lastShownTexture = null;
 
-            if (profile != null && !profile.showFallbackWhenSourceMissing)
+            if (_profile != null && !_profile.showFallbackWhenSourceMissing)
                 return;
 
-            if (view != null)
-                view.ShowFallback();
+            if (_view != null && _profile != null && _profile.fallbackTexture != null)
+                _view.Show(_profile.fallbackTexture);
         }
-
-#if UNITY_EDITOR
-        private void OnValidate()
-        {
-            if (view == null)
-                view = GetComponent<VirtualMonitorView>();
-        }
-#endif
     }
 }

@@ -6,31 +6,34 @@ using UnityEngine;
 
 public class VirtualCameraManager : MonoBehaviour
 {
-    
+    [Header("Настройки камеры")]
     [SerializeField] private VirtualCameraSource cameraPrefab;
-    public VirtualCameraSource CameraPrefab{get{return cameraPrefab;}}
-    //[SerializeField]private List<VirtualCameraSource> virtualCameraList = new List<VirtualCameraSource>();
+    [SerializeField]private int cameraIDToRemove = 0;
+    [SerializeField] private CameraCaptureProfileSO profile;
     
-    /*
-     
-     TODO: сделай ещё bootstraper, который будет сам манагер назначать
-    */
+    
+    [Space]
+    [SerializeField] private Transform SpawnPoint;
+    public VirtualCameraSource CameraPrefab{get{return cameraPrefab;}}
     private Dictionary<int, VirtualCameraSource> _virtualcameraDict = new Dictionary<int, VirtualCameraSource>();
 
-
-    [SerializeField]private int cameraIDToRemove;
 
     public int CameraIDToRemove
     {
         get { return cameraIDToRemove; }
     }
     public event Action<VirtualCameraSource> cameraInitializedEvent;
-    
-    public event Action<int> cameraDestroyedEvent;
+    public event Action<int> cameraRemovedEvent;
 
-    
+    void Start()
+    {
+        if (IsDictNull() && FindAnyObjectByType<VirtualCameraSource>() != null)
+        {
+            FillVirtualCameraDict();
+        }
+    }
 
-    private void SpawnCamera(VirtualCameraSource virtualcamera)
+    private void AddCamera(VirtualCameraSource virtualcamera)
     {
 
         int id = 0;
@@ -44,9 +47,14 @@ public class VirtualCameraManager : MonoBehaviour
             id++;
         }
         
-        VirtualCameraSource spawned = Instantiate(virtualcamera);
+        VirtualCameraSource spawned = Instantiate(virtualcamera, SpawnPoint.position, SpawnPoint.rotation);
         spawned.CameraId = id;
         spawned.name = "CCTV cam_" + spawned.CameraId;
+        
+        if (profile != null)
+        {
+            spawned.ApplyProfile(profile);
+        }
         
         spawned.Initialize();
         
@@ -56,7 +64,7 @@ public class VirtualCameraManager : MonoBehaviour
         
     }
 
-    private void DestroyCamera(int cameraID)
+    private void removeCamera(int cameraID)
     {
         if (IsDictNull() && FindAnyObjectByType<VirtualCameraSource>() != null)
         {
@@ -73,18 +81,19 @@ public class VirtualCameraManager : MonoBehaviour
         }
 
         RemoveCameraFromDict(cameraID);
-        cameraDestroyedEvent?.Invoke(cameraID);
+        
+        cameraRemovedEvent?.Invoke(cameraID);
     }
 
     public void SpawnCameraEditor(VirtualCameraSource virtualcamera)
     {
-        SpawnCamera(virtualcamera);
+        AddCamera(virtualcamera);
 
     }
 
     public void DestroyCameraEditor(int cameraID)
     {
-        DestroyCamera(cameraID);
+        removeCamera(cameraID);
     }
 
     private bool TryGetVirtualCamera(int cameraId)
@@ -108,6 +117,8 @@ public class VirtualCameraManager : MonoBehaviour
         if (TryGetVirtualCamera(cameraId))
         {
             return _virtualcameraDict[cameraId];
+
+            
         }
 
         return null;
@@ -135,8 +146,7 @@ public class VirtualCameraManager : MonoBehaviour
 
     private void FillVirtualCameraDict()
     {
-        var cameras = FindObjectsByType<VirtualCameraSource>(FindObjectsSortMode.InstanceID);
-        System.Array.Sort(cameras, (a, b) => a.CameraId.CompareTo(b.CameraId));
+        var cameras = FindObjectsByType<VirtualCameraSource>(FindObjectsSortMode.None);
 
         for (int i = 0; i < cameras.Length; i++)
         {

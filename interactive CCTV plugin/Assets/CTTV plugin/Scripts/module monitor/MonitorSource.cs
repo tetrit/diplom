@@ -1,19 +1,30 @@
+using Surveillance.Cameras;
 using Surveillance.Monitors;
 using UnityEngine;
-using Surveillance.Cameras;
 
 public class MonitorSource : MonoBehaviour
 {
-    [SerializeField] private VirtualMonitorController virtualMonitorController;
-    [SerializeField] private YoloOverlayCanvas yoloOverlayCanvas;
-    [SerializeField] private YoloRunner yoloRunner;
+    [Header("Базовые настройки")]
+    [SerializeField]private int monitorID;
+    [SerializeField]public int targetCameraId;
+    [SerializeField]private VirtualMonitorProfileSO profile;
+    [Space]
+    [Header("Настройки рендера (View)")]
+    [SerializeField]private Renderer targetRenderer;
+    [SerializeField]private int materialIndex = 0;
+    [SerializeField]private string texturePropertyName = "_BaseMap";
 
-    [Header("Settings")]
-    [SerializeField] private int monitorID;
+    private VirtualCameraManager _cameraManager;
+    private VirtualCameraSource _boundCamera;
+    
+    private MaterialPropertyBlock _propertyBlock;
+    private int _texturePropertyId;
+    private Texture _lastShownTexture;
+    private bool _isStarted;
 
     public int MonitorID
     {
-        get { return monitorID; }
+        get => monitorID;
         set
         {
             monitorID = value;
@@ -21,25 +32,135 @@ public class MonitorSource : MonoBehaviour
         }
     }
 
-    [SerializeField] public VirtualMonitorProfileSO virtualMonitorProfileSO;
-    [Range(1, 15)][SerializeField] public int max_boxes;
-    [SerializeField] public Color BoxColor = Color.green;
-    [Range(0.1f, 1f)][SerializeField] public float ConfidenceThreshold = 0.5f;
+    public int TargetCameraId
+    {
+        get => targetCameraId;
+        set
+        {
+            targetCameraId = value;
+            ApplySettings();
+        }
+    }
+
+    private void Awake()
+    {
+        _propertyBlock = new MaterialPropertyBlock();
+        _texturePropertyId = Shader.PropertyToID(texturePropertyName);
+
+        if (targetRenderer == null)
+            targetRenderer = GetComponentInChildren<Renderer>();
+    }
+
+    private void Start()
+    {
+        _cameraManager = FindFirstObjectByType<VirtualCameraManager>();
+        _isStarted = true;
+        ApplySettings();
+        
+    }
+
+    private void Update()
+    {
+        if (!_isStarted || profile == null) return;
+        
+
+    }
+
+    private void OnDestroy()
+    {
+        if (_cameraManager != null)
+            _cameraManager.cameraInitializedEvent -= OnCameraRegistered;
+    }
+
+    public void ApplyProfile(VirtualMonitorProfileSO newProfile)
+    {
+        profile = newProfile;
+        ApplySettings();
+    }
 
     public void ApplySettings()
     {
-        virtualMonitorController.SetCameraId(monitorID);
-        virtualMonitorController.Profile = virtualMonitorProfileSO;
+        if (!_isStarted) return; 
 
-        yoloOverlayCanvas.MaxBoxes = max_boxes;
-        yoloOverlayCanvas.DefaultBoxColor = BoxColor;
+        if (profile == null || !profile.startEnabled)
+        {
+            ShowFallback();
+            return;
+        }
 
-        yoloRunner.InitializeFromMonitor(monitorID, ConfidenceThreshold);
-        yoloRunner.BindToCameraById();
+        BindCamera();
     }
 
-    void Start()
+    private void BindCamera()
     {
-        ApplySettings();
+        if (_cameraManager == null)
+        {
+            ShowFallback();
+            return;
+        }
+
+        
+        _cameraManager.cameraInitializedEvent -= OnCameraRegistered;
+        _cameraManager.cameraInitializedEvent += OnCameraRegistered;
+
+        _boundCamera = _cameraManager.GetVirtualCamera(targetCameraId);
+
+        if (_boundCamera != null)
+            UpdateCameraTexture();
+        else
+            ShowFallback();
+    }
+
+    private void UpdateCameraTexture()
+    {
+        if (_boundCamera == null)
+        {
+            if (profile != null && profile.autoRebind)
+                BindCamera();
+            else
+                ShowFallback();
+            return;
+        }
+
+        Texture texture = _boundCamera.OutputTexture;
+
+        if (texture == null)
+        {
+            ShowFallback();
+            return;
+        }
+
+        ShowTexture(texture);
+    }
+
+    private void OnCameraRegistered(VirtualCameraSource source)
+    {
+        if (profile == null || source == null) return;
+        if (source.CameraId != targetCameraId) return;
+
+        _boundCamera = source;
+        UpdateCameraTexture();
+    }
+
+    private void ShowFallback()
+    {
+        if (profile != null && !profile.showFallbackWhenSourceMissing)
+            return;
+
+        if (profile != null && profile.fallbackTexture != null)
+            ShowTexture(profile.fallbackTexture);
+    }
+
+    private void ShowTexture(Texture texture)
+    {
+        if (targetRenderer == null || texture == null) return;
+        
+        if (_lastShownTexture == texture) return;
+
+        targetRenderer.GetPropertyBlock(_propertyBlock, materialIndex);
+        _propertyBlock.SetTexture(_texturePropertyId, texture);
+        targetRenderer.SetPropertyBlock(_propertyBlock, materialIndex);
+
+        _lastShownTexture = texture;
     }
 }

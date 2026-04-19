@@ -1,27 +1,28 @@
-using System;
 using System.Collections.Generic;
-using Surveillance.Cameras;
 using UnityEngine;
+using Surveillance.Monitors;
 
 public class MonitorManager : MonoBehaviour
-{
+{[Header("Настройки создания монитора")]
     [SerializeField] private MonitorSource monitorPrefab;
+    [SerializeField] private VirtualMonitorProfileSO defaultProfile;
+    [SerializeField] private Transform SpawnPoint;
+
+    [Space]
     public int MonitorIDToRemove = -1;
-    public MonitorSource MonitorPrefab
-    {
-        get{return monitorPrefab;}
-    }
+    
+    public MonitorSource MonitorPrefab => monitorPrefab;
+
+    private Dictionary<int, MonitorSource> _monitorsDict = new Dictionary<int, MonitorSource>();
 
     private void Start()
     {
         RefreshMonitorDictionary();
     }
-
-    private Dictionary<int, MonitorSource> _monitorsDict = new Dictionary<int, MonitorSource>();
     
     public void AddMonitor()
     {
-        if (_monitorsDict.Count == 0 && FindObjectOfType<MonitorSource>() != null)
+        if (_monitorsDict.Count == 0 && FindFirstObjectByType<MonitorSource>() != null)
         {
             RefreshMonitorDictionary();
         }
@@ -32,27 +33,35 @@ public class MonitorManager : MonoBehaviour
             id++;
         }
         
-        MonitorSource monitor = Instantiate(MonitorPrefab);
+        MonitorSource monitor = Instantiate(MonitorPrefab, SpawnPoint.position, SpawnPoint.rotation);
         monitor.MonitorID = id;
+        monitor.TargetCameraId = id;
         monitor.name = "Monitor_" + id;
+        
+        if (defaultProfile != null)
+        {
+            monitor.ApplyProfile(defaultProfile);
+        }
+
         _monitorsDict.Add(id, monitor);
+        Debug.Log("Monitor Spawned: " + id);
     }
 
     public void RemoveMonitor(int id)
     {
-        if (_monitorsDict.Count == 0 && FindObjectOfType<MonitorSource>() != null)
+        if (_monitorsDict.Count == 0 && FindFirstObjectByType<MonitorSource>() != null)
         {
             RefreshMonitorDictionary();
         }
         
         if (_monitorsDict.ContainsKey(id))
         {
-            MonitorSource spawned = _monitorsDict.ContainsKey(id) ? _monitorsDict[id] : null;
+            MonitorSource spawned = _monitorsDict[id];
             if (Application.isPlaying && spawned != null)
             {
                 Destroy(spawned.gameObject);
             }
-            if(!Application.isPlaying && spawned != null)
+            else if(!Application.isPlaying && spawned != null)
             { 
                 DestroyImmediate(spawned.gameObject);
             }
@@ -64,10 +73,14 @@ public class MonitorManager : MonoBehaviour
     {
         var monitors = FindObjectsByType<MonitorSource>(FindObjectsSortMode.InstanceID);
         System.Array.Sort(monitors, (a, b) => a.MonitorID.CompareTo(b.MonitorID));
+        _monitorsDict.Clear();
+
         for (int i = 0; i < monitors.Length; i++)
         {
-            _monitorsDict.Add(monitors[i].MonitorID, monitors[i]);
+            if (!_monitorsDict.ContainsKey(monitors[i].MonitorID))
+            {
+                _monitorsDict.Add(monitors[i].MonitorID, monitors[i]);
+            }
         }
-        
     }
 }
