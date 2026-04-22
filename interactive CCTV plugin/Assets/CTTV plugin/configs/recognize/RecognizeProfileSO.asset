@@ -15,5 +15,5 @@ MonoBehaviour:
   inputWidth: 640
   inputHeight: 640
   confidenceThreshold: 0.635
-  detectionInterval: 0.2
+  detectionInterval: 1
   BackendType: 256
