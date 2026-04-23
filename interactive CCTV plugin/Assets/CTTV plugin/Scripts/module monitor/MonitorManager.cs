@@ -1,11 +1,11 @@
 using System.Collections.Generic;
 using UnityEngine;
-using Surveillance.Monitors;
+using Surveillance.Settings; // ИСПРАВЛЕНО: Добавлен namespace настроек
 
 public class MonitorManager : MonoBehaviour
-{[Header("Настройки создания монитора")]
+{
+    [Header("Настройки создания монитора")]
     [SerializeField] private MonitorSource monitorPrefab;
-    [SerializeField] private VirtualMonitorProfileSO defaultProfile;
     [SerializeField] private Transform SpawnPoint;
 
     [Space]
@@ -38,9 +38,10 @@ public class MonitorManager : MonoBehaviour
         monitor.TargetCameraId = id;
         monitor.name = "Monitor_" + id;
         
-        if (defaultProfile != null)
+        // ИСПРАВЛЕНО: Берем настройки из центрального модуля вместо SO
+        if (ConfigurationManager.Instance != null)
         {
-            monitor.ApplyProfile(defaultProfile);
+            monitor.ApplyConfig(ConfigurationManager.Instance.CurrentConfig.DisplaySettings);
         }
 
         _monitorsDict.Add(id, monitor);

@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 335810857920a544e8af9992b39e4ca0, type: 3}
+  m_Name: SystemConfiguration
+  m_EditorClassIdentifier: Assembly-CSharp::Surveillance.Settings.SystemConfigurationSO
+  CameraSettings:
+    RenderWidth: 640
+    RenderHeight: 360
+    DepthBits: 24
+    Format: 0
+    TargetFps: 10
+    StartStreaming: 1
+    FieldOfView: 60
+    NearClipPlane: 0.1
+    FarClipPlane: 1000
+    ClearFlags: 1
+    BackgroundColor: {r: 0, g: 0, b: 0, a: 1}
+    AllowHdr: 0
+    AllowMsaa: 0
+  RecognitionSettings:
+    InputWidth: 640
+    InputHeight: 640
+    ConfidenceThreshold: 0.801
+    DetectionInterval: 0.7
+    BackendType: 256
+  DisplaySettings:
+    ShowFallbackWhenSourceMissing: 1
+    AutoRebind: 1
+    BoundingBoxColor: {r: 0.5849056, g: 0.20358361, b: 0.19037023, a: 1}
+    MaxBoxesOnScreen: 30
+  EventRules:
+  - RuleName: "\u0430\u0431\u043E\u0431\u0430"
+    IsActive: 1
+    TargetClassName: chair
+    MinimumObjectsCount: 1
+    MinimumConfidence: 0.748
+    CooldownSeconds: 3
+  - RuleName: "\u0430\u0431\u043E\u0431\u044B"
+    IsActive: 1
+    TargetClassName: chair
+    MinimumObjectsCount: 2
+    MinimumConfidence: 0.712
+    CooldownSeconds: 5
