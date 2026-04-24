@@ -16,4 +16,4 @@ MonoBehaviour:
   FileName: surveillance_log.txt
   MaxMemoryLogs: 1000
   LogSystemEvents: 1
-  LogRawDetections: 1
+  LogRawDetections: 0

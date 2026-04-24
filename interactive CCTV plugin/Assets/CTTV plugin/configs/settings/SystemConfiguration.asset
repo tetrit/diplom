@@ -43,10 +43,10 @@ MonoBehaviour:
     TargetClassName: chair
     MinimumObjectsCount: 1
     MinimumConfidence: 0.748
-    CooldownSeconds: 3
-  - RuleName: "\u0430\u0431\u043E\u0431\u044B"
-    IsActive: 1
-    TargetClassName: chair
-    MinimumObjectsCount: 2
-    MinimumConfidence: 0.712
     CooldownSeconds: 5
+  - RuleName: "\u0445\u043E\u043B\u043E\u0434\u0438\u043B\u044C\u043D\u0438\u043A"
+    IsActive: 1
+    TargetClassName: refrigerator
+    MinimumObjectsCount: 1
+    MinimumConfidence: 0.62
+    CooldownSeconds: 2
