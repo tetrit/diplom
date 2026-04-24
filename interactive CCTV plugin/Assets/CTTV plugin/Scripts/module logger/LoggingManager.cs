@@ -51,7 +51,7 @@ namespace Surveillance.Logs
                 eventModule.OnSystemEventGenerated += HandleSystemEvent;
 
             if (recognizeManager != null)
-                recognizeManager.OnCameraDetectionsCompleted += HandleRawDetection;
+                recognizeManager.onCameraDetectionsCompleted += HandleRawDetection;
 
             LogSystemMessage("Модуль журналирования успешно инициализирован.");
         }
@@ -137,7 +137,7 @@ namespace Surveillance.Logs
                 eventModule.OnSystemEventGenerated -= HandleSystemEvent;
 
             if (recognizeManager != null)
-                recognizeManager.OnCameraDetectionsCompleted -= HandleRawDetection;
+                recognizeManager.onCameraDetectionsCompleted -= HandleRawDetection;
         }
     }
 }

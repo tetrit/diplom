@@ -17,7 +17,7 @@ namespace Surveillance.Events
         private void Start()
         {
             if (recognizeManager == null) recognizeManager = FindObjectOfType<RecognizeManager>();
-            if (recognizeManager != null) recognizeManager.OnCameraDetectionsCompleted += ProcessDetections;
+            if (recognizeManager != null) recognizeManager.onCameraDetectionsCompleted += ProcessDetections;
 
             if (ConfigurationManager.Instance != null)
             {
@@ -82,7 +82,7 @@ namespace Surveillance.Events
 
         private void OnDestroy()
         {
-            if (recognizeManager != null) recognizeManager.OnCameraDetectionsCompleted -= ProcessDetections;
+            if (recognizeManager != null) recognizeManager.onCameraDetectionsCompleted -= ProcessDetections;
             if (ConfigurationManager.Instance != null) ConfigurationManager.Instance.OnConfigurationChanged -= OnSettingsChanged;
         }
     }

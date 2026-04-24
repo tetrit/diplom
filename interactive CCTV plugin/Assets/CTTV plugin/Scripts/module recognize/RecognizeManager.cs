@@ -4,18 +4,15 @@ using Surveillance.Settings;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Unity.InferenceEngine;
 using UnityEngine;
 
 public class RecognizeManager : MonoBehaviour
 {
-    [SerializeField] private ModelAsset modelAsset;
-    
     private YoloClassMapProvider yoloClassMapProvider;
     private VirtualCameraManager virtualCameraManager;
     private YoloInferenceEngine inferenceEngine;
 
-    public event Action<DetectionResult> OnCameraDetectionsCompleted;
+    public event Action<DetectionResult> onCameraDetectionsCompleted;
 
     private Queue<VirtualCameraSource> _processQueue = new Queue<VirtualCameraSource>();
     private bool _isProcessing = false;
@@ -45,8 +42,8 @@ public class RecognizeManager : MonoBehaviour
         }
         else _currentConfig = new RecognitionConfig();
 
-        if (modelAsset != null)
-            inferenceEngine = new YoloInferenceEngine(modelAsset, _currentConfig, yoloClassMapProvider);
+        if (_currentConfig.Model != null)
+            inferenceEngine = new YoloInferenceEngine(_currentConfig.Model, _currentConfig, yoloClassMapProvider);
 
         var existingCameras = FindObjectsByType<VirtualCameraSource>(FindObjectsSortMode.None);
         foreach (var cam in existingCameras) OnCameraInitialized(cam);
@@ -115,7 +112,7 @@ public class RecognizeManager : MonoBehaviour
                     Boxes = foundBoxes
                 };
 
-                OnCameraDetectionsCompleted?.Invoke(result);
+                onCameraDetectionsCompleted?.Invoke(result);
             }
             catch (Exception ex) { Debug.LogWarning($"Ошибка детекции: {ex.Message}"); }
         }

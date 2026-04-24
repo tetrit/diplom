@@ -1,8 +1,9 @@
+using Surveillance.Settings;
 using UnityEngine;
 
 public class YoloClassMapProvider : MonoBehaviour
 {
-    [SerializeField] private TextAsset classMapJson;
+    private RecognitionConfig _currentConfig;
 
     public YoloClassMapData Data { get; private set; }
 
@@ -13,19 +14,32 @@ public class YoloClassMapProvider : MonoBehaviour
 
     private void Awake()
     {
+        
+        if (ConfigurationManager.Instance != null)
+        {
+            ConfigurationManager.Instance.OnConfigurationChanged += OnSettingsChanged;
+            _currentConfig = ConfigurationManager.Instance.CurrentConfig.RecognitionSettings;
+        }
+        LoadAssignedJson();
+    }
+    
+
+    private void OnSettingsChanged(SystemConfigurationSO config)
+    {
+        _currentConfig = config.RecognitionSettings;
         LoadAssignedJson();
     }
 
     public void LoadAssignedJson()
     {
-        if (classMapJson == null)
+        if (_currentConfig.TextAsset == null)
         {
             Debug.LogWarning("YoloClassMapProvider: JSON file is not assigned.");
             Data = null;
             return;
         }
 
-        Data = JsonUtility.FromJson<YoloClassMapData>(classMapJson.text);
+        Data = JsonUtility.FromJson<YoloClassMapData>(_currentConfig.TextAsset.text);
 
         if (Data == null || Data.class_names == null || Data.class_names.Length == 0)
         {
