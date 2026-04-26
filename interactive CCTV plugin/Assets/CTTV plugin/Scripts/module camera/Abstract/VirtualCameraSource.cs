@@ -3,22 +3,26 @@ using Surveillance.Settings;
 using UnityEngine;
 
 namespace Surveillance.Cameras
-{
-    [RequireComponent(typeof(Camera))]
-    public sealed class VirtualCameraSource : MonoBehaviour
+{[RequireComponent(typeof(Camera))]
+    public abstract class VirtualCameraSource : MonoBehaviour // Убрали sealed, добавили abstract
     {
         public int CameraId;
 
-        // Текущие параметры (теперь они заполняются Менеджером настроек)
-        private int width = 640;
-        private int height = 360;
-        private int depthBits = 24;
-        private RenderTextureFormat renderTextureFormat = RenderTextureFormat.ARGB32;
-        private int targetCaptureFps = 10;
-        private bool startStreaming = true;
+        // Поля теперь protected, чтобы наследники могли их читать/изменять,
+        // но они остаются закрытыми для внешних классов.
+        protected int width = 640;
+        protected int height = 360;
+        protected int depthBits = 24;
+        protected RenderTextureFormat renderTextureFormat = RenderTextureFormat.ARGB32;
+        protected int targetCaptureFps = 10;
+        protected bool startStreaming = true;
         
-        private Camera _sourceCamera;
-        private RenderTexture _renderTexture;
+        protected Camera _sourceCamera;
+        protected RenderTexture _renderTexture;
+        
+        protected bool _isInitialized;
+        protected bool _isStreaming;
+        protected float _nextCaptureTime;
 
         public RenderTexture OutputTexture
         {
@@ -29,24 +33,19 @@ namespace Surveillance.Cameras
                     Initialize();
                 }
                 return _renderTexture;
-
             }
         }
         
-        private bool _isInitialized;
-        private bool _isStreaming;
-        private float _nextCaptureTime;
-        
-        
-        private void Awake()
+        // Unity-методы сделаны protected virtual
+        protected virtual void Awake()
         {
             if (_sourceCamera == null)
                 _sourceCamera = GetComponent<Camera>();
         }
 
-        private void Start() => Initialize();
+        protected virtual void Start() => Initialize();
 
-        private void Update()
+        protected virtual void Update()
         {
             if (!_isInitialized || !_isStreaming) return;
             if (Time.unscaledTime < _nextCaptureTime) return;
@@ -57,9 +56,10 @@ namespace Surveillance.Cameras
             CaptureFrameNow();
         }
 
-        private void OnDestroy() => ReleaseRenderTexture();
+        protected virtual void OnDestroy() => ReleaseRenderTexture();
 
-        public void Initialize()
+        // Основные методы сделаны virtual, если наследник захочет изменить их логику
+        public virtual void Initialize()
         {
             if (_isInitialized) return;
 
@@ -74,7 +74,7 @@ namespace Surveillance.Cameras
             _isInitialized = true;
         }
         
-        public void CaptureFrameNow()
+        public virtual void CaptureFrameNow()
         {
             if (!_isInitialized || _sourceCamera == null || _renderTexture == null) return;
             _sourceCamera.Render();
@@ -82,8 +82,7 @@ namespace Surveillance.Cameras
         
         public int GetTargetCaptureFps() => Mathf.Max(1, targetCaptureFps);
 
-        // НОВЫЙ МЕТОД: Применение настроек из Центрального Модуля
-        public void ApplyConfig(CameraConfig config)
+        public virtual void ApplyConfig(CameraConfig config)
         {
             if (config == null || _sourceCamera == null) return;
 
@@ -102,7 +101,6 @@ namespace Surveillance.Cameras
             _sourceCamera.allowHDR = config.AllowHdr;
             _sourceCamera.allowMSAA = config.AllowMsaa;
 
-            // Пересоздаем текстуру, если изменилось разрешение
             if (_isInitialized)
             {
                 CreateRenderTexture();
@@ -110,7 +108,7 @@ namespace Surveillance.Cameras
             }
         }
 
-        private void CreateRenderTexture()
+        protected virtual void CreateRenderTexture()
         {
             ReleaseRenderTexture();
             _renderTexture = new RenderTexture(width, height, depthBits, renderTextureFormat)
@@ -120,7 +118,7 @@ namespace Surveillance.Cameras
             _renderTexture.Create();
         }
 
-        private void ReleaseRenderTexture()
+        protected virtual void ReleaseRenderTexture()
         {
             if (_renderTexture == null) return;
             if (_renderTexture.IsCreated()) _renderTexture.Release();

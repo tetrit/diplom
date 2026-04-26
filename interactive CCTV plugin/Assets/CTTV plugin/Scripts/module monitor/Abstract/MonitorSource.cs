@@ -2,38 +2,38 @@ using Surveillance.Cameras;
 using Surveillance.Settings; // <-- Добавлено
 using UnityEngine;
 
-public class MonitorSource : MonoBehaviour
+public abstract class MonitorSource : MonoBehaviour
 {
-    [SerializeField] private int monitorID;
+    [SerializeField] protected int monitorID;
     public int targetCameraId;
     
     // Текстура заглушки осталась в инспекторе, т.к. файлы ассетов не сохраняются в JSON
-    [SerializeField] private Texture fallbackTexture;
+    [SerializeField] protected Texture fallbackTexture;
     
-    [SerializeField] private Renderer targetRenderer;
-    [SerializeField] private int materialIndex = 0;
-    [SerializeField] private string texturePropertyName = "_BaseMap";
+    [SerializeField] protected Renderer targetRenderer;
+    [SerializeField] protected int materialIndex = 0;
+    [SerializeField] protected string texturePropertyName = "_BaseMap";
 
-    private VirtualCameraManager _cameraManager;
-    private VirtualCameraSource _boundCamera;
-    private DisplayConfig _displayConfig;
+    protected VirtualCameraManager _cameraManager;
+    protected VirtualCameraSource _boundCamera;
+    protected DisplayConfig _displayConfig;
     
-    private MaterialPropertyBlock _propertyBlock;
-    private int _texturePropertyId;
-    private Texture _lastShownTexture;
-    private bool _isStarted;
+    protected MaterialPropertyBlock _propertyBlock;
+    protected int _texturePropertyId;
+    protected Texture _lastShownTexture;
+    protected bool _isStarted;
 
     public int MonitorID { get => monitorID; set { monitorID = value; ApplySettings(); } }
     public int TargetCameraId { get => targetCameraId; set { targetCameraId = value; ApplySettings(); } }
 
-    private void Awake()
+    protected virtual void Awake()
     {
         _propertyBlock = new MaterialPropertyBlock();
         _texturePropertyId = Shader.PropertyToID(texturePropertyName);
         if (targetRenderer == null) targetRenderer = GetComponentInChildren<Renderer>();
     }
 
-    private void Start()
+    protected virtual void Start()
     {
         _cameraManager = FindFirstObjectByType<VirtualCameraManager>();
         BindCamera();
@@ -47,19 +47,19 @@ public class MonitorSource : MonoBehaviour
         ApplySettings();
     }
 
-    public void ApplyConfig(DisplayConfig config)
+    public virtual void ApplyConfig(DisplayConfig config)
     {
         _displayConfig = config;
         ApplySettings();
     }
 
-    public void ApplySettings()
+    public virtual void ApplySettings()
     {
         if (!_isStarted) return; 
         BindCamera();
     }
 
-    private void BindCamera()
+    protected virtual void BindCamera()
     {
         if (_cameraManager == null)
         {
@@ -76,7 +76,7 @@ public class MonitorSource : MonoBehaviour
         else ShowFallback();
     }
 
-    private void UpdateCameraTexture()
+    protected virtual void UpdateCameraTexture()
     {
         if (_boundCamera == null)
         {
@@ -90,21 +90,21 @@ public class MonitorSource : MonoBehaviour
         else ShowTexture(texture);
     }
 
-    private void OnCameraRegistered(VirtualCameraSource source)
+    protected virtual void OnCameraRegistered(VirtualCameraSource source)
     {
         if (source == null || source.CameraId != targetCameraId) return;
         _boundCamera = source;
         UpdateCameraTexture();
     }
 
-    private void ShowFallback()
+    protected virtual void ShowFallback()
     {
         if (_displayConfig != null && !_displayConfig.ShowFallbackWhenSourceMissing) return;
         if (fallbackTexture != null) ShowTexture(fallbackTexture);
         Debug.Log("adsdasda");
     }
 
-    private void ShowTexture(Texture texture)
+    protected virtual void ShowTexture(Texture texture)
     {
         if (targetRenderer == null || texture == null) return;
         if (_lastShownTexture == texture) return;

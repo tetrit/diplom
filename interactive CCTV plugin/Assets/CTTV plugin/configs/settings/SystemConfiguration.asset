@@ -29,7 +29,7 @@ MonoBehaviour:
   RecognitionSettings:
     InputWidth: 640
     InputHeight: 640
-    ConfidenceThreshold: 0.801
+    ConfidenceThreshold: 0.694
     DetectionInterval: 0.7
     BackendType: 256
     Model: {fileID: 5022602860645237092, guid: 1457ad3b234c3f1438cacca820d5124d, type: 3}
@@ -39,16 +39,4 @@ MonoBehaviour:
     AutoRebind: 1
     BoundingBoxColor: {r: 0.5849056, g: 0.20358361, b: 0.19037023, a: 1}
     MaxBoxesOnScreen: 30
-  EventRules:
-  - RuleName: "\u0430\u0431\u043E\u0431\u0430"
-    IsActive: 1
-    TargetClassName: chair
-    MinimumObjectsCount: 1
-    MinimumConfidence: 0.748
-    CooldownSeconds: 5
-  - RuleName: "\u0445\u043E\u043B\u043E\u0434\u0438\u043B\u044C\u043D\u0438\u043A"
-    IsActive: 1
-    TargetClassName: refrigerator
-    MinimumObjectsCount: 1
-    MinimumConfidence: 0.62
-    CooldownSeconds: 2
+  EventRules: []

@@ -65,7 +65,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 903a690207092af44838ef31dd971bb9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DetectionUIController
-  _monitorSource: {fileID: 1629151640054096462}
+  _monitorSource: {fileID: 3302522460500399406}
 --- !u!1 &3563546246384828128
 GameObject:
   m_ObjectHideFlags: 0
@@ -213,7 +213,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 604531837603060748}
-  - component: {fileID: 1629151640054096462}
+  - component: {fileID: 3302522460500399406}
   m_Layer: 0
   m_Name: Monitor
   m_TagString: Untagged
@@ -237,7 +237,7 @@ Transform:
   - {fileID: 390867448673863726}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1629151640054096462
+--- !u!114 &3302522460500399406
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -246,12 +246,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 6941638795440955549}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: beb40c0f32804894686101e3affdf487, type: 3}
+  m_Script: {fileID: 11500000, guid: 744214607fcade64d8a96ac2d055e98b, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MonitorSource
+  m_EditorClassIdentifier: Assembly-CSharp::Monitorbase
   monitorID: 0
   targetCameraId: 0
-  profile: {fileID: 0}
+  fallbackTexture: {fileID: 0}
   targetRenderer: {fileID: 7695955579086097116}
   materialIndex: 0
   texturePropertyName: _BaseMap
