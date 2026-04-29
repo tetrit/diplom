@@ -7,12 +7,15 @@ using Surveillance.Settings;
 namespace Surveillance.Events
 {
     public class EventProcessingModule : MonoBehaviour
-    {[SerializeField] private RecognizeManager recognizeManager;
+    {
+        [SerializeField] private RecognizeManager recognizeManager;
 
-        // Теперь правила подтягиваются из файла, а не из редактора
-        private List<RuleConfig> activeRules = new List<RuleConfig>();
+        private List<BaseRuleSO> activeRules = new List<BaseRuleSO>();
         public event Action<SystemEvent> OnSystemEventGenerated;
+        
+        // Словари для хранения таймеров кулдауна и состояния правил (счетчиков кадров и т.д.)
         private Dictionary<string, float> _lastTriggerTimes = new Dictionary<string, float>();
+        private Dictionary<string, RuleContext> _ruleContexts = new Dictionary<string, RuleContext>();
 
         private void Start()
         {
@@ -37,29 +40,24 @@ namespace Surveillance.Events
             {
                 if (rule == null || !rule.IsActive) continue;
 
-                List<BoundingBox> matchedBoxes = CheckRuleConditions(rule, result.Boxes);
+                // Уникальный ключ для пары "Камера + Правило"
+                string stateKey = $"{result.CameraId}_{rule.RuleName}";
 
-                if (matchedBoxes.Count >= rule.MinimumObjectsCount)
+                // Инициализируем контекст (состояние), если его еще нет
+                if (!_ruleContexts.ContainsKey(stateKey))
+                    _ruleContexts[stateKey] = new RuleContext();
+
+                // Делегируем проверку самому правилу
+                if (rule.Evaluate(result, _ruleContexts[stateKey], out List<BoundingBox> triggeringBoxes, out string eventClassName))
                 {
-                    string cooldownKey = $"{result.CameraId}_{rule.RuleName}";
-                    if (IsCooldownPassed(cooldownKey, rule.CooldownSeconds))
+                    // Проверка кулдауна
+                    if (IsCooldownPassed(stateKey, rule.CooldownSeconds))
                     {
-                        GenerateAndDispatchEvent(rule, result.CameraId, matchedBoxes);
-                        _lastTriggerTimes[cooldownKey] = Time.time;
+                        GenerateAndDispatchEvent(rule, result.CameraId, eventClassName, triggeringBoxes);
+                        _lastTriggerTimes[stateKey] = Time.time;
                     }
                 }
             }
-        }
-
-        private List<BoundingBox> CheckRuleConditions(RuleConfig rule, List<BoundingBox> boxes)
-        {
-            List<BoundingBox> matched = new List<BoundingBox>();
-            foreach (var box in boxes)
-            {
-                if (box.ClassName == rule.TargetClassName && box.Confidence >= rule.MinimumConfidence)
-                    matched.Add(box);
-            }
-            return matched;
         }
 
         private bool IsCooldownPassed(string key, float cooldown)
@@ -68,13 +66,16 @@ namespace Surveillance.Events
             return (Time.time - _lastTriggerTimes[key]) >= cooldown;
         }
 
-        private void GenerateAndDispatchEvent(RuleConfig rule, int cameraId, List<BoundingBox> triggeringBoxes)
+        private void GenerateAndDispatchEvent(BaseRuleSO rule, int cameraId, string targetClass, List<BoundingBox> triggeringBoxes)
         {
             SystemEvent newEvent = new SystemEvent
             {
-                EventId = Guid.NewGuid().ToString(), Timestamp = DateTime.Now,
-                CameraId = cameraId, RuleName = rule.RuleName,
-                TargetClassName = rule.TargetClassName, DetectedCount = triggeringBoxes.Count,
+                EventId = Guid.NewGuid().ToString(), 
+                Timestamp = DateTime.Now,
+                CameraId = cameraId, 
+                RuleName = rule.RuleName,
+                TargetClassName = targetClass, 
+                DetectedCount = triggeringBoxes.Count,
                 TriggeringBoxes = triggeringBoxes
             };
             OnSystemEventGenerated?.Invoke(newEvent);

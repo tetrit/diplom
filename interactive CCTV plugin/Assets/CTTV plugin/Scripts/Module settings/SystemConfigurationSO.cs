@@ -17,7 +17,7 @@ namespace Surveillance.Settings
         public DisplayConfig DisplaySettings = new DisplayConfig();
         
         [Header("Правила событий")]
-        public List<RuleConfig> EventRules = new List<RuleConfig>();
+        public List<Surveillance.Events.BaseRuleSO> EventRules = new List<Surveillance.Events.BaseRuleSO>();
     }
 
     [Serializable]
