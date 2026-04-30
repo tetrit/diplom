@@ -27,13 +27,12 @@ MonoBehaviour:
     AllowHdr: 0
     AllowMsaa: 0
   RecognitionSettings:
+    EngineFactory: {fileID: 11400000, guid: 01379e3485b182c4ea40e840d2642005, type: 2}
     InputWidth: 640
     InputHeight: 640
     ConfidenceThreshold: 0.67
     DetectionInterval: 1
-    BackendType: 256
-    Model: {fileID: 5022602860645237092, guid: 1457ad3b234c3f1438cacca820d5124d, type: 3}
-    TextAsset: {fileID: 4900000, guid: 49bd15c7328b40640a1b5f425106130a, type: 3}
+    classes: []
   DisplaySettings:
     ShowFallbackWhenSourceMissing: 1
     AutoRebind: 1

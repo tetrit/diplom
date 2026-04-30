@@ -1,5 +1,4 @@
 using System;
-using UnityEngine;
 
 [Serializable]
 public class YoloClassMapData
@@ -8,4 +7,5 @@ public class YoloClassMapData
     public string source_model_file;
     public int version;
     public string[] class_names;
+    public bool IsLoaded { get; }
 }

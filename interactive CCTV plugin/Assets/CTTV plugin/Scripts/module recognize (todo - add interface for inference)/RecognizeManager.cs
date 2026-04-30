@@ -8,9 +8,9 @@ using UnityEngine;
 
 public class RecognizeManager : MonoBehaviour
 {
-    private YoloClassMapProvider yoloClassMapProvider;
+    private IClassMapProvider classMapProvider;
+    private IInferenceEngine inferenceEngine;
     private VirtualCameraManager virtualCameraManager;
-    private YoloInferenceEngine inferenceEngine;
 
     public event Action<DetectionResult> onCameraDetectionsCompleted;
 
@@ -24,7 +24,7 @@ public class RecognizeManager : MonoBehaviour
     void Awake()
     {
         virtualCameraManager = FindObjectOfType<VirtualCameraManager>();
-        yoloClassMapProvider = GetComponent<YoloClassMapProvider>();
+        classMapProvider = GetComponent<IClassMapProvider>();
         
         if (virtualCameraManager != null)
         {
@@ -42,14 +42,25 @@ public class RecognizeManager : MonoBehaviour
         }
         else _currentConfig = new RecognitionConfig();
 
-        if (_currentConfig.Model != null)
-            inferenceEngine = new YoloInferenceEngine(_currentConfig.Model, _currentConfig, yoloClassMapProvider);
+        InitializeEngine();
 
         var existingCameras = FindObjectsByType<VirtualCameraSource>(FindObjectsSortMode.None);
         foreach (var cam in existingCameras) OnCameraInitialized(cam);
     }
 
-    // ИСПРАВЛЕНО: SystemConfigurationSO
+    private void InitializeEngine()
+    {
+        // ИСПРАВЛЕНО: Строгое использование Фабрики!
+        if (_currentConfig.EngineFactory != null)
+        {
+            inferenceEngine = _currentConfig.EngineFactory.CreateEngine(_currentConfig, classMapProvider);
+        }
+        else
+        {
+            Debug.LogError("RecognizeManager: Фабрика (EngineFactory) не назначена в SystemConfigurationSO! Запуск распознавания невозможен.");
+        }
+    }
+
     private void OnSettingsChanged(SystemConfigurationSO config)
     {
         _currentConfig = config.RecognitionSettings;

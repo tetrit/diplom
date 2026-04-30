@@ -4,9 +4,9 @@ using System.Threading.Tasks;
 using System.Collections;
 using System.Collections.Generic;
 using Surveillance.Recognize;
-using Surveillance.Settings; // <-- Добавлено
+using Surveillance.Settings;
 
-public class YoloInferenceEngine : System.IDisposable
+public class YoloInferenceEngine : IInferenceEngine
 {
     private Model runtimeModel;
     private Worker worker;
@@ -16,28 +16,28 @@ public class YoloInferenceEngine : System.IDisposable
     private int inputWidth;
     private int inputHeight;
     private float confidenceThreshold;
-    private YoloClassMapProvider classMapProvider;
+    
+    // Имена классов (теперь прямо тут!)
+    private string[] _classNames;
 
-    public YoloInferenceEngine(ModelAsset modelAsset, RecognitionConfig config, YoloClassMapProvider classProvider)
+    public YoloInferenceEngine(ModelAsset modelAsset, BackendType backendType, RecognitionConfig config, string[] classNames)
     {
         inputWidth = config.InputWidth;
         inputHeight = config.InputHeight;
         confidenceThreshold = config.ConfidenceThreshold;
-        classMapProvider = classProvider;
+        _classNames = classNames; // СОХРАНЯЕМ ИХ ТУТ!
 
         runtimeModel = ModelLoader.Load(modelAsset);
-        worker = new Worker(runtimeModel, config.BackendType);
+        worker = new Worker(runtimeModel, backendType);
         
         inputTensor = new Tensor<float>(new TensorShape(1, 3, inputHeight, inputWidth));
         _resizedTexture = new RenderTexture(inputWidth, inputHeight, 0, RenderTextureFormat.ARGB32);
         _resizedTexture.Create();
     }
 
-    // НОВЫЙ МЕТОД: Динамическое обновление параметров без пересоздания движка
     public void UpdateConfig(RecognitionConfig config)
     {
         confidenceThreshold = config.ConfidenceThreshold;
-        // Примечание: Если меняются InputWidth/InputHeight, требуется пересоздание Tensor/Texture
     }
 
     public async Task<List<BoundingBox>> RunInferenceAsync(RenderTexture sourceTexture)
@@ -78,8 +78,7 @@ public class YoloInferenceEngine : System.IDisposable
 
             float cls = outputTensor[offset + 5];
             int classId = Mathf.RoundToInt(cls);
-            string className = classMapProvider != null && classMapProvider.IsLoaded
-                ? classMapProvider.GetClassName(classId) : $"unknown_{classId}";
+            string className = GetClassName(classId);
 
             boxes.Add(new BoundingBox
             {
@@ -89,6 +88,16 @@ public class YoloInferenceEngine : System.IDisposable
             });
         }
         return boxes;
+    }
+
+    //TODO: переделать эту хуйню
+    
+    // Новый метод для получения имени класса
+    private string GetClassName(int classId)
+    {
+        if (_classNames == null || _classNames.Length == 0) return $"unknown_{classId}";
+        if (classId < 0 || classId >= _classNames.Length) return $"unknown_{classId}";
+        return _classNames[classId];
     }
 
     public void Dispose()
