@@ -342,7 +342,6 @@ GameObject:
   m_Component:
   - component: {fileID: 6213391183593209737}
   - component: {fileID: 731966983982391651}
-  - component: {fileID: 439153516437236022}
   m_Layer: 0
   m_Name: RecognizeManager
   m_TagString: Untagged
@@ -377,15 +376,3 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aa3817a5703cbe7429db6528e880af2a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RecognizeManager
---- !u!114 &439153516437236022
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8277226508932021330}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c2a60c4fe5a8c8f4eb33315a9115e5a2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::YoloClassMapProvider

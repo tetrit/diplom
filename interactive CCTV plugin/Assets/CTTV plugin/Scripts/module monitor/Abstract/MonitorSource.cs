@@ -7,7 +7,6 @@ public abstract class MonitorSource : MonoBehaviour
     [SerializeField] protected int monitorID;
     public int targetCameraId;
     
-    // Текстура заглушки осталась в инспекторе, т.к. файлы ассетов не сохраняются в JSON
     [SerializeField] protected Texture fallbackTexture;
     
     [SerializeField] protected Renderer targetRenderer;
@@ -38,6 +37,7 @@ public abstract class MonitorSource : MonoBehaviour
         _cameraManager = FindFirstObjectByType<VirtualCameraManager>();
         BindCamera();
         _isStarted = true;
+        _boundCamera.CameraReloaded += BindCamera;
 
         if (ConfigurationManager.Instance != null)
         {

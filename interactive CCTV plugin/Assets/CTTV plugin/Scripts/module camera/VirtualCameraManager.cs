@@ -39,8 +39,7 @@ public class VirtualCameraManager : MonoBehaviour
             ConfigurationManager.Instance.OnConfigurationChanged -= OnSettingsChanged;
         }
     }
-
-    // ИСПРАВЛЕНО: SystemConfigurationSO
+    
     private void OnSettingsChanged(SystemConfigurationSO config)
     {
         foreach (var cam in _virtualcameraDict.Values)

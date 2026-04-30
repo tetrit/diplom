@@ -14,3 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Surveillance.Recognize.DefaultYoloFactorySO
   Model: {fileID: 5022602860645237092, guid: 1457ad3b234c3f1438cacca820d5124d, type: 3}
   BackendType: 256
+  configtext: {fileID: 4900000, guid: 49bd15c7328b40640a1b5f425106130a, type: 3}

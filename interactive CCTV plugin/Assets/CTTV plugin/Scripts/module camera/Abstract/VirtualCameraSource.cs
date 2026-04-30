@@ -24,6 +24,8 @@ namespace Surveillance.Cameras
         protected bool _isStreaming;
         protected float _nextCaptureTime;
 
+        public event Action CameraReloaded;
+
         public RenderTexture OutputTexture
         {
             get
@@ -106,6 +108,7 @@ namespace Surveillance.Cameras
                 CreateRenderTexture();
                 _sourceCamera.targetTexture = _renderTexture;
             }
+            CameraReloaded?.Invoke();
         }
 
         protected virtual void CreateRenderTexture()

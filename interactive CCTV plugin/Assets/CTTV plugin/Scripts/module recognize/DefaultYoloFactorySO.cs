@@ -8,16 +8,17 @@ namespace Surveillance.Recognize
     {[Header("Специфичные настройки встроенного YOLO")]
         public ModelAsset Model;
         public BackendType BackendType = BackendType.GPUCompute;
+        public TextAsset configtext;
 
         public override IInferenceEngine CreateEngine(RecognitionConfig config, IClassMapProvider classProvider)
         {
             if (Model == null)
             {
+                
                 Debug.LogError("YOLO Factory: Не назначена модель (ModelAsset)!");
                 return null;
             }
-            // ПЕРЕДАЕМ имена классов в движок через конструктор (см. ниже)
-            return new YoloInferenceEngine(Model, BackendType, config, config.classes);
+            return new YoloInferenceEngine(Model, BackendType, config, configtext);
         }
     }
 }

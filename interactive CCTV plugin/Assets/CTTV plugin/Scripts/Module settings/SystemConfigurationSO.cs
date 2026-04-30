@@ -42,9 +42,6 @@ namespace Surveillance.Settings
         public int InputHeight = 416;
         [Range(0.1f, 1f)] public float ConfidenceThreshold = 0.5f;
         public float DetectionInterval = 0.2f;
-        
-        [Header("Имена классов (например: person, car, ...)")]
-        public string[] classes;
     }
 
     [Serializable]

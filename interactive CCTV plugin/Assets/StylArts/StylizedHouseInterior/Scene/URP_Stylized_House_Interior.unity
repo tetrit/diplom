@@ -42874,7 +42874,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: CCTV plugin
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 439153516437236022, guid: b2ca57cf8b2b56b45853ee690b0bb8ad, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []

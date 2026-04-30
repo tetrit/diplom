@@ -32,7 +32,6 @@ MonoBehaviour:
     InputHeight: 640
     ConfidenceThreshold: 0.67
     DetectionInterval: 1
-    classes: []
   DisplaySettings:
     ShowFallbackWhenSourceMissing: 1
     AutoRebind: 1

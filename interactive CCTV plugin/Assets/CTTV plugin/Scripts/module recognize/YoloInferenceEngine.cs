@@ -16,16 +16,14 @@ public class YoloInferenceEngine : IInferenceEngine
     private int inputWidth;
     private int inputHeight;
     private float confidenceThreshold;
+    private YoloClassMapProvider _yoloClassMapProvider;
     
-    // Имена классов (теперь прямо тут!)
-    private string[] _classNames;
 
-    public YoloInferenceEngine(ModelAsset modelAsset, BackendType backendType, RecognitionConfig config, string[] classNames)
+    public YoloInferenceEngine(ModelAsset modelAsset, BackendType backendType, RecognitionConfig config, TextAsset classNames)
     {
         inputWidth = config.InputWidth;
         inputHeight = config.InputHeight;
         confidenceThreshold = config.ConfidenceThreshold;
-        _classNames = classNames; // СОХРАНЯЕМ ИХ ТУТ!
 
         runtimeModel = ModelLoader.Load(modelAsset);
         worker = new Worker(runtimeModel, backendType);
@@ -33,6 +31,12 @@ public class YoloInferenceEngine : IInferenceEngine
         inputTensor = new Tensor<float>(new TensorShape(1, 3, inputHeight, inputWidth));
         _resizedTexture = new RenderTexture(inputWidth, inputHeight, 0, RenderTextureFormat.ARGB32);
         _resizedTexture.Create();
+
+
+        _yoloClassMapProvider = new YoloClassMapProvider();
+        _yoloClassMapProvider.LoadAssignedJson(classNames.text);
+        
+        
     }
 
     public void UpdateConfig(RecognitionConfig config)
@@ -78,7 +82,7 @@ public class YoloInferenceEngine : IInferenceEngine
 
             float cls = outputTensor[offset + 5];
             int classId = Mathf.RoundToInt(cls);
-            string className = GetClassName(classId);
+            string className = _yoloClassMapProvider.GetClassName(classId);
 
             boxes.Add(new BoundingBox
             {
@@ -89,16 +93,9 @@ public class YoloInferenceEngine : IInferenceEngine
         }
         return boxes;
     }
-
-    //TODO: переделать эту хуйню
     
-    // Новый метод для получения имени класса
-    private string GetClassName(int classId)
-    {
-        if (_classNames == null || _classNames.Length == 0) return $"unknown_{classId}";
-        if (classId < 0 || classId >= _classNames.Length) return $"unknown_{classId}";
-        return _classNames[classId];
-    }
+    
+    
 
     public void Dispose()
     {
