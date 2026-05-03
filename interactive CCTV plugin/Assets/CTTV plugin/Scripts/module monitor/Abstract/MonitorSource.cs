@@ -3,23 +3,19 @@ using Surveillance.Settings;
 using UnityEngine;
 
 public abstract class MonitorSource : MonoBehaviour
-{
-    [SerializeField] protected int monitorID;
+{[SerializeField] protected int monitorID;
     public int targetCameraId;
     
     [SerializeField] protected Texture fallbackTexture;
     
     [SerializeField] protected Renderer targetRenderer;
     [SerializeField] protected int materialIndex = 0;
-    [SerializeField] protected string texturePropertyName = "_BaseMap";
-
-    [Header("Источники настроек")][Tooltip("Включено - получение настроек по умолчанию из SystemConfiguration. Выключено - применение индивидуальных настроек.")]
-    [SerializeField] protected bool useGlobalConfig = true;
-
-    [Header("Индивидуальные настройки отображения")]
+    [SerializeField] protected string texturePropertyName = "_BaseMap";[Header("Источники настроек")]
+    [Tooltip("Если включено, монитор будет получать настройки по умолчанию из SystemConfiguration.")]
+    [SerializeField] protected bool useGlobalConfig = true;[Header("Индивидуальные настройки отображения")]
     [SerializeField] protected bool showFallbackWhenSourceMissing = true;
-    [SerializeField] protected bool autoRebind = true;[SerializeField] protected Color boundingBoxColor = Color.green;
-    [SerializeField] protected int maxBoxesOnScreen = 30;
+    [SerializeField] protected bool autoRebind = true;
+    [SerializeField] protected Color boundingBoxColor = Color.green;[SerializeField] protected int maxBoxesOnScreen = 30;
 
     protected VirtualCameraManager _cameraManager;
     protected VirtualCameraSource _boundCamera;
@@ -53,10 +49,6 @@ public abstract class MonitorSource : MonoBehaviour
 
         BindCamera();
         _isStarted = true;
-        
-        if (_boundCamera != null)
-            _boundCamera.CameraReloaded += BindCamera;
-
         ApplySettings();
     }
 
@@ -89,6 +81,7 @@ public abstract class MonitorSource : MonoBehaviour
         _cameraManager.cameraInitializedEvent -= OnCameraRegistered;
         _cameraManager.cameraInitializedEvent += OnCameraRegistered;
         
+        // Надежно отписываемся от старой камеры
         if (_boundCamera != null)
         {
             _boundCamera.CameraReloaded -= BindCamera;
@@ -98,6 +91,7 @@ public abstract class MonitorSource : MonoBehaviour
 
         if (_boundCamera != null) 
         {
+            // Надежно подписываемся на новую
             _boundCamera.CameraReloaded += BindCamera;
             UpdateCameraTexture();
         }
@@ -121,8 +115,12 @@ public abstract class MonitorSource : MonoBehaviour
     protected virtual void OnCameraRegistered(VirtualCameraSource source)
     {
         if (source == null || source.CameraId != targetCameraId) return;
+        
+        if (_boundCamera != null) _boundCamera.CameraReloaded -= BindCamera;
+        
         _boundCamera = source;
-        if (_boundCamera != null) _boundCamera.CameraReloaded += BindCamera;
+        _boundCamera.CameraReloaded += BindCamera;
+        
         UpdateCameraTexture();
     }
 

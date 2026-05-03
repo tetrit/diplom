@@ -3,24 +3,25 @@ using Surveillance.Settings;
 using UnityEngine;
 
 namespace Surveillance.Cameras
-{[RequireComponent(typeof(Camera))]
+{
+    [RequireComponent(typeof(Camera))]
     public abstract class VirtualCameraSource : MonoBehaviour 
     {
-        public int CameraId;
-
-        [Header("Источники настроек")][Tooltip("Включено - получение настроек по умолчанию из SystemConfiguration. Если выключено - применение индивидуальных настроек.")]
+        public int CameraId;[Header("Источники настроек")]
+        [Tooltip("Если включено, камера будет получать настройки по умолчанию из SystemConfiguration.")]
         [SerializeField] protected bool useGlobalConfig = true;
 
         [Header("Индивидуальные настройки камеры")]
-        [SerializeField][Min(100)] protected int renderWidth = 640;
-        [SerializeField][Min(100)] protected int renderHeight = 360;
-        [SerializeField][Min(1)] protected int depthBits = 24;
+        [SerializeField] protected int renderWidth = 640;
+        [SerializeField] protected int renderHeight = 360;
+        [SerializeField] protected int depthBits = 24;
         [SerializeField] protected RenderTextureFormat renderTextureFormat = RenderTextureFormat.ARGB32;
-        [SerializeField] protected int targetCaptureFps = 10;[SerializeField] protected bool startStreaming = true;
+        [SerializeField] protected int targetCaptureFps = 10;
+        [SerializeField] protected bool startStreaming = true;
 
-        [SerializeField][Range(10, 180)] protected float fieldOfView = 60f;
-        [SerializeField][Min(0.1f)] protected float nearClipPlane = 0.1f;
-        [SerializeField][Min(1f)] protected float farClipPlane = 1000f;
+        [SerializeField] protected float fieldOfView = 60f;
+        [SerializeField] protected float nearClipPlane = 0.1f;
+        [SerializeField] protected float farClipPlane = 1000f;
         [SerializeField] protected CameraClearFlags clearFlags = CameraClearFlags.Skybox;
         [SerializeField] protected Color backgroundColor = Color.black;
         [SerializeField] protected bool allowHdr = false;
@@ -39,7 +40,7 @@ namespace Surveillance.Cameras
         {
             get
             {
-                if (_renderTexture == null)
+                if (!_isInitialized || _renderTexture == null)
                 {
                     Initialize();
                 }
@@ -71,25 +72,34 @@ namespace Surveillance.Cameras
         public virtual void Initialize()
         {
             if (_isInitialized) return;
+            
+            _isInitialized = true; 
 
             if (_sourceCamera == null) _sourceCamera = GetComponent<Camera>();
-            
+
             if (useGlobalConfig && ConfigurationManager.Instance != null)
             {
-                ApplyConfig(ConfigurationManager.Instance.CurrentConfig.CameraSettings);
-            }
-            else
-            {
-                ApplyCurrentSettings();
+                var config = ConfigurationManager.Instance.CurrentConfig.CameraSettings;
+                renderWidth = config.RenderWidth;
+                renderHeight = config.RenderHeight;
+                depthBits = config.DepthBits;
+                renderTextureFormat = config.Format;
+                targetCaptureFps = config.TargetFps;
+                startStreaming = config.StartStreaming;
+
+                fieldOfView = config.FieldOfView;
+                nearClipPlane = config.NearClipPlane;
+                farClipPlane = config.FarClipPlane;
+                clearFlags = config.ClearFlags;
+                backgroundColor = config.BackgroundColor;
+                allowHdr = config.AllowHdr;
+                allowMsaa = config.AllowMsaa;
             }
             
-            CreateRenderTexture();
-            _sourceCamera.targetTexture = _renderTexture;
+            ApplyCurrentSettings(notify: false); 
 
             _sourceCamera.enabled = false;
-            _isStreaming = startStreaming;
             _nextCaptureTime = Time.unscaledTime;
-            _isInitialized = true;
         }
         
         public virtual void CaptureFrameNow()
@@ -121,11 +131,11 @@ namespace Surveillance.Cameras
                 allowHdr = config.AllowHdr;
                 allowMsaa = config.AllowMsaa;
             }
-
-            ApplyCurrentSettings();
+            
+            ApplyCurrentSettings(notify: true);
         }
-
-        public virtual void ApplyCurrentSettings()
+        
+        public virtual void ApplyCurrentSettings(bool notify = true)
         {
             if (_sourceCamera == null) return;
 
@@ -139,12 +149,13 @@ namespace Surveillance.Cameras
 
             _isStreaming = startStreaming;
 
-            if (_isInitialized)
+            CreateRenderTexture();
+            _sourceCamera.targetTexture = _renderTexture;
+            
+            if (notify)
             {
-                CreateRenderTexture();
-                _sourceCamera.targetTexture = _renderTexture;
+                CameraReloaded?.Invoke();
             }
-            CameraReloaded?.Invoke();
         }
 
         protected virtual void CreateRenderTexture()

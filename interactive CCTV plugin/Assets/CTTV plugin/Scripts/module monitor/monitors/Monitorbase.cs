@@ -5,9 +5,10 @@ public class Monitorbase : MonitorSource
 {
     [SerializeField]private TextMeshProUGUI text;
 
-    public override void ApplySettings()
+
+    protected override void UpdateCameraTexture()
     {
-        base.ApplySettings();
+        base.UpdateCameraTexture();
         if (_boundCamera != null)
         {
             text.text = "cam: " + _boundCamera.gameObject.name;
