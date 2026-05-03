@@ -1,3 +1,4 @@
+// --- ИЗМЕНЕНИЯ В YoloInferenceEngine.cs ---
 using UnityEngine;
 using Unity.InferenceEngine;
 using System.Threading.Tasks;
@@ -18,12 +19,17 @@ public class YoloInferenceEngine : IInferenceEngine
     private float confidenceThreshold;
     private YoloClassMapProvider _yoloClassMapProvider;
     
+    // ---> НОВОЕ ПОЛЕ <---
+    private List<string> allowedClasses; 
 
     public YoloInferenceEngine(ModelAsset modelAsset, BackendType backendType, RecognitionConfig config, TextAsset classNames)
     {
         inputWidth = config.InputWidth;
         inputHeight = config.InputHeight;
         confidenceThreshold = config.ConfidenceThreshold;
+        
+        // Читаем классы при инициализации
+        allowedClasses = config.AllowedClasses; 
 
         runtimeModel = ModelLoader.Load(modelAsset);
         worker = new Worker(runtimeModel, backendType);
@@ -32,16 +38,15 @@ public class YoloInferenceEngine : IInferenceEngine
         _resizedTexture = new RenderTexture(inputWidth, inputHeight, 0, RenderTextureFormat.ARGB32);
         _resizedTexture.Create();
 
-
         _yoloClassMapProvider = new YoloClassMapProvider();
         _yoloClassMapProvider.LoadAssignedJson(classNames.text);
-        
-        
     }
 
     public void UpdateConfig(RecognitionConfig config)
     {
         confidenceThreshold = config.ConfidenceThreshold;
+        // Обновляем список, если настройки изменились в рантайме
+        allowedClasses = config.AllowedClasses; 
     }
 
     public async Task<List<BoundingBox>> RunInferenceAsync(RenderTexture sourceTexture)
@@ -84,6 +89,14 @@ public class YoloInferenceEngine : IInferenceEngine
             int classId = Mathf.RoundToInt(cls);
             string className = _yoloClassMapProvider.GetClassName(classId);
 
+            // ---> НОВАЯ ЛОГИКА ФИЛЬТРАЦИИ <---
+            // Если список фильтров задан и не пуст, пропускаем класс, если его нет в списке
+            if (allowedClasses != null && allowedClasses.Count > 0)
+            {
+                if (!allowedClasses.Contains(className)) 
+                    continue;
+            }
+
             boxes.Add(new BoundingBox
             {
                 X1 = outputTensor[offset + 0], Y1 = outputTensor[offset + 1],
@@ -93,9 +106,6 @@ public class YoloInferenceEngine : IInferenceEngine
         }
         return boxes;
     }
-    
-    
-    
 
     public void Dispose()
     {
