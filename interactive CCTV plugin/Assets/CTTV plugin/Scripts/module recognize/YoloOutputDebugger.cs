@@ -10,7 +10,7 @@ public class YoloOutputDebugger : MonoBehaviour
         _recognizeManager = FindObjectOfType<RecognizeManager>();
         if (_recognizeManager != null)
         {
-            _recognizeManager.OnCameraDetectionsCompleted += debug;
+            _recognizeManager.onCameraDetectionsCompleted += debug;
         }
     }
 

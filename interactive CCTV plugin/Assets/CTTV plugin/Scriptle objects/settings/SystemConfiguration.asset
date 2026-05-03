@@ -27,26 +27,18 @@ MonoBehaviour:
     AllowHdr: 0
     AllowMsaa: 0
   RecognitionSettings:
+    EngineFactory: {fileID: 11400000, guid: 01379e3485b182c4ea40e840d2642005, type: 2}
     InputWidth: 640
     InputHeight: 640
-    ConfidenceThreshold: 0.801
-    DetectionInterval: 0.7
-    BackendType: 256
+    ConfidenceThreshold: 0.67
+    DetectionInterval: 1
+    AllowedClasses: []
   DisplaySettings:
     ShowFallbackWhenSourceMissing: 1
     AutoRebind: 1
     BoundingBoxColor: {r: 0.5849056, g: 0.20358361, b: 0.19037023, a: 1}
     MaxBoxesOnScreen: 30
   EventRules:
-  - RuleName: "\u0430\u0431\u043E\u0431\u0430"
-    IsActive: 1
-    TargetClassName: chair
-    MinimumObjectsCount: 1
-    MinimumConfidence: 0.748
-    CooldownSeconds: 5
-  - RuleName: "\u0445\u043E\u043B\u043E\u0434\u0438\u043B\u044C\u043D\u0438\u043A"
-    IsActive: 1
-    TargetClassName: refrigerator
-    MinimumObjectsCount: 1
-    MinimumConfidence: 0.62
-    CooldownSeconds: 2
+  - {fileID: 11400000, guid: 5ad854ab52b2aac4baf914efe3d27965, type: 2}
+  - {fileID: 11400000, guid: 1cd62de3fcc2a6340944739402f50c7e, type: 2}
+  - {fileID: 11400000, guid: 9061d845eda51b24c96f41c93b3a1cf4, type: 2}

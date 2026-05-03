@@ -28,8 +28,7 @@ namespace Surveillance.Settings
         {
             ApplyConfiguration();
         }
-
-        // Вызываем эту функцию, чтобы применить измененные настройки
+        
         public void ApplyConfiguration()
         {
             if (currentConfig != null)

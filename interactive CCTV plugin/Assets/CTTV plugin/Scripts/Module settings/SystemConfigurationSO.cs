@@ -1,25 +1,23 @@
+// --- ИЗМЕНЕНИЯ В SystemConfigurationSO.cs ---
 using System;
 using System.Collections.Generic;
-using Unity.InferenceEngine;
 using UnityEngine;
 
 namespace Surveillance.Settings
-{[CreateAssetMenu(fileName = "SystemConfiguration", menuName = "Surveillance/Master System Configuration")]
+{
+    [CreateAssetMenu(fileName = "SystemConfiguration", menuName = "Surveillance/Master System Configuration")]
     public class SystemConfigurationSO : ScriptableObject
     {
         [Header("Настройки камер")]
         public CameraConfig CameraSettings = new CameraConfig();
         
         [Header("Настройки распознавания")]
-        public RecognitionConfig RecognitionSettings = new RecognitionConfig();
-        
-        [Header("Настройки отображения (Мониторы/UI)")]
-        public DisplayConfig DisplaySettings = new DisplayConfig();
-        
-        [Header("Правила событий")]
-        public List<RuleConfig> EventRules = new List<RuleConfig>();
+        public RecognitionConfig RecognitionSettings = new RecognitionConfig();[Header("Настройки отображения (Мониторы/UI)")]
+        public DisplayConfig DisplaySettings = new DisplayConfig();[Header("Правила событий")]
+        public List<Surveillance.Events.BaseRuleSO> EventRules = new List<Surveillance.Events.BaseRuleSO>();
     }
 
+    // ... (CameraConfig без изменений) ...
     [Serializable]
     public class CameraConfig
     {
@@ -29,7 +27,8 @@ namespace Surveillance.Settings
         public RenderTextureFormat Format = RenderTextureFormat.ARGB32;
         
         public int TargetFps = 10;
-        public bool StartStreaming = true;[Range(10f, 120f)] public float FieldOfView = 60f;
+        public bool StartStreaming = true;
+        [Range(10f, 120f)] public float FieldOfView = 60f;
         public float NearClipPlane = 0.1f;
         public float FarClipPlane = 1000f;
         public CameraClearFlags ClearFlags = CameraClearFlags.Skybox;
@@ -41,12 +40,19 @@ namespace Surveillance.Settings
     [Serializable]
     public class RecognitionConfig
     {
+        [Header("Движок инференса (Фабрика)")][Tooltip("Сюда перетаскиваем ScriptableObject нужной фабрики (например, DefaultYoloFactory)")]
+        public Surveillance.Recognize.InferenceFactorySO EngineFactory;[Header("Универсальные параметры")]
         public int InputWidth = 416;
-        public int InputHeight = 416;[Range(0.1f, 1f)] public float ConfidenceThreshold = 0.5f;
+        public int InputHeight = 416;
+        [Range(0.1f, 1f)] public float ConfidenceThreshold = 0.5f;
         public float DetectionInterval = 0.2f;
-        public BackendType BackendType = BackendType.GPUCompute;
+
+        // ---> НОВОЕ ПОЛЕ <---
+        [Header("Фильтрация объектов")][Tooltip("Список классов через запятую (например: car, person). Если пусто - разрешены все.")]
+        public List<string> AllowedClasses = new List<string>();
     }
 
+    // ... (DisplayConfig без изменений) ...
     [Serializable]
     public class DisplayConfig
     {
@@ -54,14 +60,5 @@ namespace Surveillance.Settings
         public bool AutoRebind = true;
         public Color BoundingBoxColor = Color.green;
         public int MaxBoxesOnScreen = 30;
-    }[Serializable]
-    public class RuleConfig
-    {
-        public string RuleName = "Новое правило";
-        public bool IsActive = true;
-        public string TargetClassName = "person";
-        public int MinimumObjectsCount = 1;
-        [Range(0.1f, 1f)] public float MinimumConfidence = 0.5f;
-        public float CooldownSeconds = 5f;
     }
 }

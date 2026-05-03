@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &8165749474125836654
+--- !u!1 &2634950735149092457
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,55 +8,54 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 727781665930441164}
-  - component: {fileID: 5938879355757504876}
-  - component: {fileID: 4449682420709538291}
-  - component: {fileID: 1894636487982799668}
+  - component: {fileID: 3738559351862127320}
+  - component: {fileID: 1586763418349736003}
+  - component: {fileID: 6801660434935930522}
+  - component: {fileID: 5760966495562222786}
   m_Layer: 0
-  m_Name: CCTV
+  m_Name: CCTV camera Movable
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &727781665930441164
+--- !u!4 &3738559351862127320
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8165749474125836654}
+  m_GameObject: {fileID: 2634950735149092457}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: -10.3972, y: 1.80972, z: -5.41649}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &5938879355757504876
+--- !u!114 &1586763418349736003
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8165749474125836654}
+  m_GameObject: {fileID: 2634950735149092457}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 185656ff13e89fc4aa72cbd7c09bffa6, type: 3}
+  m_Script: {fileID: 11500000, guid: 4e0e3c966c53a924ea14dcfe1f0a1598, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Surveillance.Cameras.VirtualCameraSource
-  cameraId: 0
-  profile: {fileID: 11400000, guid: 688f6264ab79ca94187f3f724c013f2b, type: 2}
-  autoRegisterInService: 1
-  sourceCamera: {fileID: 4449682420709538291}
---- !u!20 &4449682420709538291
+  m_EditorClassIdentifier: Assembly-CSharp::MovableVirtualCamera
+  CameraId: 0
+  rotateSpeed: 10
+  maxAngle: 90
+--- !u!20 &6801660434935930522
 Camera:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8165749474125836654}
+  m_GameObject: {fileID: 2634950735149092457}
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 1
@@ -101,13 +100,13 @@ Camera:
   m_OcclusionCulling: 1
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
---- !u!114 &1894636487982799668
+--- !u!114 &5760966495562222786
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8165749474125836654}
+  m_GameObject: {fileID: 2634950735149092457}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}

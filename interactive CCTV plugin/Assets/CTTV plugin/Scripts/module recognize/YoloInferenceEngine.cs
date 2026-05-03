@@ -1,12 +1,13 @@
+// --- ИЗМЕНЕНИЯ В YoloInferenceEngine.cs ---
 using UnityEngine;
 using Unity.InferenceEngine;
 using System.Threading.Tasks;
 using System.Collections;
 using System.Collections.Generic;
 using Surveillance.Recognize;
-using Surveillance.Settings; // <-- Добавлено
+using Surveillance.Settings;
 
-public class YoloInferenceEngine : System.IDisposable
+public class YoloInferenceEngine : IInferenceEngine
 {
     private Model runtimeModel;
     private Worker worker;
@@ -16,28 +17,36 @@ public class YoloInferenceEngine : System.IDisposable
     private int inputWidth;
     private int inputHeight;
     private float confidenceThreshold;
-    private YoloClassMapProvider classMapProvider;
+    private YoloClassMapProvider _yoloClassMapProvider;
+    
+    // ---> НОВОЕ ПОЛЕ <---
+    private List<string> allowedClasses; 
 
-    public YoloInferenceEngine(ModelAsset modelAsset, RecognitionConfig config, YoloClassMapProvider classProvider)
+    public YoloInferenceEngine(ModelAsset modelAsset, BackendType backendType, RecognitionConfig config, TextAsset classNames)
     {
         inputWidth = config.InputWidth;
         inputHeight = config.InputHeight;
         confidenceThreshold = config.ConfidenceThreshold;
-        classMapProvider = classProvider;
+        
+        // Читаем классы при инициализации
+        allowedClasses = config.AllowedClasses; 
 
         runtimeModel = ModelLoader.Load(modelAsset);
-        worker = new Worker(runtimeModel, config.BackendType);
+        worker = new Worker(runtimeModel, backendType);
         
         inputTensor = new Tensor<float>(new TensorShape(1, 3, inputHeight, inputWidth));
         _resizedTexture = new RenderTexture(inputWidth, inputHeight, 0, RenderTextureFormat.ARGB32);
         _resizedTexture.Create();
+
+        _yoloClassMapProvider = new YoloClassMapProvider();
+        _yoloClassMapProvider.LoadAssignedJson(classNames.text);
     }
 
-    // НОВЫЙ МЕТОД: Динамическое обновление параметров без пересоздания движка
     public void UpdateConfig(RecognitionConfig config)
     {
         confidenceThreshold = config.ConfidenceThreshold;
-        // Примечание: Если меняются InputWidth/InputHeight, требуется пересоздание Tensor/Texture
+        // Обновляем список, если настройки изменились в рантайме
+        allowedClasses = config.AllowedClasses; 
     }
 
     public async Task<List<BoundingBox>> RunInferenceAsync(RenderTexture sourceTexture)
@@ -78,8 +87,15 @@ public class YoloInferenceEngine : System.IDisposable
 
             float cls = outputTensor[offset + 5];
             int classId = Mathf.RoundToInt(cls);
-            string className = classMapProvider != null && classMapProvider.IsLoaded
-                ? classMapProvider.GetClassName(classId) : $"unknown_{classId}";
+            string className = _yoloClassMapProvider.GetClassName(classId);
+
+            // ---> НОВАЯ ЛОГИКА ФИЛЬТРАЦИИ <---
+            // Если список фильтров задан и не пуст, пропускаем класс, если его нет в списке
+            if (allowedClasses != null && allowedClasses.Count > 0)
+            {
+                if (!allowedClasses.Contains(className)) 
+                    continue;
+            }
 
             boxes.Add(new BoundingBox
             {

@@ -15,7 +15,7 @@ public class DetectionUIController : MonoBehaviour
         _recognizeManager = FindObjectOfType<RecognizeManager>();
 
         if (_recognizeManager != null)
-            _recognizeManager.OnCameraDetectionsCompleted += OnDetectionsReceived;
+            _recognizeManager.onCameraDetectionsCompleted += OnDetectionsReceived;
 
         if (ConfigurationManager.Instance != null)
         {
@@ -55,7 +55,7 @@ public class DetectionUIController : MonoBehaviour
 
     void OnDestroy()
     {
-        if (_recognizeManager != null) _recognizeManager.OnCameraDetectionsCompleted -= OnDetectionsReceived;
+        if (_recognizeManager != null) _recognizeManager.onCameraDetectionsCompleted -= OnDetectionsReceived;
         if (ConfigurationManager.Instance != null) ConfigurationManager.Instance.OnConfigurationChanged -= OnSettingsChanged;
     }
 }

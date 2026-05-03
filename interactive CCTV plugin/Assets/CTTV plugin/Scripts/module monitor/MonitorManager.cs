@@ -38,7 +38,6 @@ public class MonitorManager : MonoBehaviour
         monitor.TargetCameraId = id;
         monitor.name = "Monitor_" + id;
         
-        // ИСПРАВЛЕНО: Берем настройки из центрального модуля вместо SO
         if (ConfigurationManager.Instance != null)
         {
             monitor.ApplyConfig(ConfigurationManager.Instance.CurrentConfig.DisplaySettings);

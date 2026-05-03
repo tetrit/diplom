@@ -4,18 +4,15 @@ using Surveillance.Settings;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Unity.InferenceEngine;
 using UnityEngine;
 
 public class RecognizeManager : MonoBehaviour
 {
-    [SerializeField] private ModelAsset modelAsset;
-    
-    private YoloClassMapProvider yoloClassMapProvider;
+    private IClassMapProvider classMapProvider;
+    private IInferenceEngine inferenceEngine;
     private VirtualCameraManager virtualCameraManager;
-    private YoloInferenceEngine inferenceEngine;
 
-    public event Action<DetectionResult> OnCameraDetectionsCompleted;
+    public event Action<DetectionResult> onCameraDetectionsCompleted;
 
     private Queue<VirtualCameraSource> _processQueue = new Queue<VirtualCameraSource>();
     private bool _isProcessing = false;
@@ -27,7 +24,7 @@ public class RecognizeManager : MonoBehaviour
     void Awake()
     {
         virtualCameraManager = FindObjectOfType<VirtualCameraManager>();
-        yoloClassMapProvider = GetComponent<YoloClassMapProvider>();
+        classMapProvider = GetComponent<IClassMapProvider>();
         
         if (virtualCameraManager != null)
         {
@@ -45,14 +42,25 @@ public class RecognizeManager : MonoBehaviour
         }
         else _currentConfig = new RecognitionConfig();
 
-        if (modelAsset != null)
-            inferenceEngine = new YoloInferenceEngine(modelAsset, _currentConfig, yoloClassMapProvider);
+        InitializeEngine();
 
         var existingCameras = FindObjectsByType<VirtualCameraSource>(FindObjectsSortMode.None);
         foreach (var cam in existingCameras) OnCameraInitialized(cam);
     }
 
-    // ИСПРАВЛЕНО: SystemConfigurationSO
+    private void InitializeEngine()
+    {
+        // ИСПРАВЛЕНО: Строгое использование Фабрики!
+        if (_currentConfig.EngineFactory != null)
+        {
+            inferenceEngine = _currentConfig.EngineFactory.CreateEngine(_currentConfig, classMapProvider);
+        }
+        else
+        {
+            Debug.LogError("RecognizeManager: Фабрика (EngineFactory) не назначена в SystemConfigurationSO! Запуск распознавания невозможен.");
+        }
+    }
+
     private void OnSettingsChanged(SystemConfigurationSO config)
     {
         _currentConfig = config.RecognitionSettings;
@@ -115,7 +123,7 @@ public class RecognizeManager : MonoBehaviour
                     Boxes = foundBoxes
                 };
 
-                OnCameraDetectionsCompleted?.Invoke(result);
+                onCameraDetectionsCompleted?.Invoke(result);
             }
             catch (Exception ex) { Debug.LogWarning($"Ошибка детекции: {ex.Message}"); }
         }
