@@ -1,4 +1,4 @@
-// --- ИЗМЕНЕНИЯ В YoloInferenceEngine.cs ---
+
 using UnityEngine;
 using Unity.InferenceEngine;
 using System.Threading.Tasks;
@@ -19,7 +19,7 @@ public class YoloInferenceEngine : IInferenceEngine
     private float confidenceThreshold;
     private YoloClassMapProvider _yoloClassMapProvider;
     
-    // ---> НОВОЕ ПОЛЕ <---
+
     private List<string> allowedClasses; 
 
     public YoloInferenceEngine(ModelAsset modelAsset, BackendType backendType, RecognitionConfig config, TextAsset classNames)
@@ -28,7 +28,7 @@ public class YoloInferenceEngine : IInferenceEngine
         inputHeight = config.InputHeight;
         confidenceThreshold = config.ConfidenceThreshold;
         
-        // Читаем классы при инициализации
+  
         allowedClasses = config.AllowedClasses; 
 
         runtimeModel = ModelLoader.Load(modelAsset);
@@ -45,7 +45,7 @@ public class YoloInferenceEngine : IInferenceEngine
     public void UpdateConfig(RecognitionConfig config)
     {
         confidenceThreshold = config.ConfidenceThreshold;
-        // Обновляем список, если настройки изменились в рантайме
+
         allowedClasses = config.AllowedClasses; 
     }
 
@@ -89,8 +89,7 @@ public class YoloInferenceEngine : IInferenceEngine
             int classId = Mathf.RoundToInt(cls);
             string className = _yoloClassMapProvider.GetClassName(classId);
 
-            // ---> НОВАЯ ЛОГИКА ФИЛЬТРАЦИИ <---
-            // Если список фильтров задан и не пуст, пропускаем класс, если его нет в списке
+
             if (allowedClasses != null && allowedClasses.Count > 0)
             {
                 if (!allowedClasses.Contains(className)) 

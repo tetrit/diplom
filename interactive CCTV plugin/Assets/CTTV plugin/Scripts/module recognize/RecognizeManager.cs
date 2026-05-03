@@ -50,14 +50,14 @@ public class RecognizeManager : MonoBehaviour
 
     private void InitializeEngine()
     {
-        // ИСПРАВЛЕНО: Строгое использование Фабрики!
+
         if (_currentConfig.EngineFactory != null)
         {
             inferenceEngine = _currentConfig.EngineFactory.CreateEngine(_currentConfig, classMapProvider);
         }
         else
         {
-            Debug.LogError("RecognizeManager: Фабрика (EngineFactory) не назначена в SystemConfigurationSO! Запуск распознавания невозможен.");
+            Debug.LogError("RecognizeManager: EngineFactory не назначен в SystemConfigurationSO! Запуск распознавания невозможен.");
         }
     }
 

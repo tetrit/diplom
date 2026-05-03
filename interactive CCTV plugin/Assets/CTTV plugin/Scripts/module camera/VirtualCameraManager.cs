@@ -20,7 +20,7 @@ public class VirtualCameraManager : MonoBehaviour
 
     void Start()
     {
-        // Подписка на централизованные настройки
+
         if (ConfigurationManager.Instance != null)
         {
             ConfigurationManager.Instance.OnConfigurationChanged += OnSettingsChanged;
@@ -58,7 +58,6 @@ public class VirtualCameraManager : MonoBehaviour
         spawned.CameraId = id;
         spawned.name = "CCTV cam_" + spawned.CameraId;
         
-        // Применяем настройки сразу при создании
         if (ConfigurationManager.Instance != null)
             spawned.ApplyConfig(ConfigurationManager.Instance.CurrentConfig.CameraSettings);
         

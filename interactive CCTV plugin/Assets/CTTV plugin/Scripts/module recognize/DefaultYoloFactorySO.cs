@@ -5,7 +5,7 @@ using Surveillance.Settings;
 namespace Surveillance.Recognize
 {[CreateAssetMenu(fileName = "DefaultYoloFactory", menuName = "Surveillance/Inference/Default YOLO Factory")]
     public class DefaultYoloFactorySO : InferenceFactorySO
-    {[Header("Специфичные настройки встроенного YOLO")]
+    {[Header("настройки встроенного YOLO")]
         public ModelAsset Model;
         public BackendType BackendType = BackendType.GPUCompute;
         public TextAsset configtext;

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 533d79d3e3cef3c43ab695af37432f6e, type: 3}
   m_Name: ConsecutiveRule
   m_EditorClassIdentifier: Assembly-CSharp::Surveillance.Events.Rules.ConsecutiveRuleSO
-  RuleName: "\u043A\u0440\u0435\u0441\u043B\u043E \u043F\u043E\u0434\u0440\u044F\u0434"
+  RuleName: "\u043A\u0440\u0435\u0441\u043B\u043E"
   IsActive: 1
   CooldownSeconds: 3
   TargetClassName: chair

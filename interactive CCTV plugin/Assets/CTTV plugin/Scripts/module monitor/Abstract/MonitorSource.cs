@@ -1,5 +1,5 @@
 using Surveillance.Cameras;
-using Surveillance.Settings; // <-- Добавлено
+using Surveillance.Settings;
 using UnityEngine;
 
 public abstract class MonitorSource : MonoBehaviour
@@ -13,9 +13,16 @@ public abstract class MonitorSource : MonoBehaviour
     [SerializeField] protected int materialIndex = 0;
     [SerializeField] protected string texturePropertyName = "_BaseMap";
 
+    [Header("Источники настроек")][Tooltip("Включено - получение настроек по умолчанию из SystemConfiguration. Выключено - применение индивидуальных настроек.")]
+    [SerializeField] protected bool useGlobalConfig = true;
+
+    [Header("Индивидуальные настройки отображения")]
+    [SerializeField] protected bool showFallbackWhenSourceMissing = true;
+    [SerializeField] protected bool autoRebind = true;[SerializeField] protected Color boundingBoxColor = Color.green;
+    [SerializeField] protected int maxBoxesOnScreen = 30;
+
     protected VirtualCameraManager _cameraManager;
     protected VirtualCameraSource _boundCamera;
-    protected DisplayConfig _displayConfig;
     
     protected MaterialPropertyBlock _propertyBlock;
     protected int _texturePropertyId;
@@ -24,6 +31,9 @@ public abstract class MonitorSource : MonoBehaviour
 
     public int MonitorID { get => monitorID; set { monitorID = value; ApplySettings(); } }
     public int TargetCameraId { get => targetCameraId; set { targetCameraId = value; ApplySettings(); } }
+
+    public Color BoundingBoxColor => boundingBoxColor;
+    public int MaxBoxesOnScreen => maxBoxesOnScreen;
 
     protected virtual void Awake()
     {
@@ -35,21 +45,30 @@ public abstract class MonitorSource : MonoBehaviour
     protected virtual void Start()
     {
         _cameraManager = FindFirstObjectByType<VirtualCameraManager>();
+
+        if (useGlobalConfig && ConfigurationManager.Instance != null)
+        {
+            ApplyConfig(ConfigurationManager.Instance.CurrentConfig.DisplaySettings);
+        }
+
         BindCamera();
         _isStarted = true;
-        _boundCamera.CameraReloaded += BindCamera;
-
-        if (ConfigurationManager.Instance != null)
-        {
-            _displayConfig = ConfigurationManager.Instance.CurrentConfig.DisplaySettings;
-        }
+        
+        if (_boundCamera != null)
+            _boundCamera.CameraReloaded += BindCamera;
 
         ApplySettings();
     }
 
     public virtual void ApplyConfig(DisplayConfig config)
     {
-        _displayConfig = config;
+        if (config != null && useGlobalConfig)
+        {
+            showFallbackWhenSourceMissing = config.ShowFallbackWhenSourceMissing;
+            autoRebind = config.AutoRebind;
+            boundingBoxColor = config.BoundingBoxColor;
+            maxBoxesOnScreen = config.MaxBoxesOnScreen;
+        }
         ApplySettings();
     }
 
@@ -69,10 +88,19 @@ public abstract class MonitorSource : MonoBehaviour
 
         _cameraManager.cameraInitializedEvent -= OnCameraRegistered;
         _cameraManager.cameraInitializedEvent += OnCameraRegistered;
-        _boundCamera = _cameraManager.GetVirtualCamera(targetCameraId);
-        Debug.Log(_boundCamera);
+        
+        if (_boundCamera != null)
+        {
+            _boundCamera.CameraReloaded -= BindCamera;
+        }
 
-        if (_boundCamera != null) UpdateCameraTexture();
+        _boundCamera = _cameraManager.GetVirtualCamera(targetCameraId);
+
+        if (_boundCamera != null) 
+        {
+            _boundCamera.CameraReloaded += BindCamera;
+            UpdateCameraTexture();
+        }
         else ShowFallback();
     }
 
@@ -80,7 +108,7 @@ public abstract class MonitorSource : MonoBehaviour
     {
         if (_boundCamera == null)
         {
-            if (_displayConfig != null && _displayConfig.AutoRebind) BindCamera();
+            if (autoRebind) BindCamera();
             else ShowFallback();
             return;
         }
@@ -94,14 +122,14 @@ public abstract class MonitorSource : MonoBehaviour
     {
         if (source == null || source.CameraId != targetCameraId) return;
         _boundCamera = source;
+        if (_boundCamera != null) _boundCamera.CameraReloaded += BindCamera;
         UpdateCameraTexture();
     }
 
     protected virtual void ShowFallback()
     {
-        if (_displayConfig != null && !_displayConfig.ShowFallbackWhenSourceMissing) return;
+        if (!showFallbackWhenSourceMissing) return;
         if (fallbackTexture != null) ShowTexture(fallbackTexture);
-        Debug.Log("adsdasda");
     }
 
     protected virtual void ShowTexture(Texture texture)
@@ -113,5 +141,11 @@ public abstract class MonitorSource : MonoBehaviour
         _propertyBlock.SetTexture(_texturePropertyId, texture);
         targetRenderer.SetPropertyBlock(_propertyBlock, materialIndex);
         _lastShownTexture = texture;
+    }
+
+    protected virtual void OnDestroy()
+    {
+        if (_boundCamera != null) _boundCamera.CameraReloaded -= BindCamera;
+        if (_cameraManager != null) _cameraManager.cameraInitializedEvent -= OnCameraRegistered;
     }
 }

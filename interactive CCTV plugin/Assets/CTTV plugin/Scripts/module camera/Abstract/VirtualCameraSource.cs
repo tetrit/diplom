@@ -4,18 +4,27 @@ using UnityEngine;
 
 namespace Surveillance.Cameras
 {[RequireComponent(typeof(Camera))]
-    public abstract class VirtualCameraSource : MonoBehaviour // Убрали sealed, добавили abstract
+    public abstract class VirtualCameraSource : MonoBehaviour 
     {
         public int CameraId;
 
-        // Поля теперь protected, чтобы наследники могли их читать/изменять,
-        // но они остаются закрытыми для внешних классов.
-        protected int width = 640;
-        protected int height = 360;
-        protected int depthBits = 24;
-        protected RenderTextureFormat renderTextureFormat = RenderTextureFormat.ARGB32;
-        protected int targetCaptureFps = 10;
-        protected bool startStreaming = true;
+        [Header("Источники настроек")][Tooltip("Включено - получение настроек по умолчанию из SystemConfiguration. Если выключено - применение индивидуальных настроек.")]
+        [SerializeField] protected bool useGlobalConfig = true;
+
+        [Header("Индивидуальные настройки камеры")]
+        [SerializeField][Min(100)] protected int renderWidth = 640;
+        [SerializeField][Min(100)] protected int renderHeight = 360;
+        [SerializeField][Min(1)] protected int depthBits = 24;
+        [SerializeField] protected RenderTextureFormat renderTextureFormat = RenderTextureFormat.ARGB32;
+        [SerializeField] protected int targetCaptureFps = 10;[SerializeField] protected bool startStreaming = true;
+
+        [SerializeField][Range(10, 180)] protected float fieldOfView = 60f;
+        [SerializeField][Min(0.1f)] protected float nearClipPlane = 0.1f;
+        [SerializeField][Min(1f)] protected float farClipPlane = 1000f;
+        [SerializeField] protected CameraClearFlags clearFlags = CameraClearFlags.Skybox;
+        [SerializeField] protected Color backgroundColor = Color.black;
+        [SerializeField] protected bool allowHdr = false;
+        [SerializeField] protected bool allowMsaa = false;
         
         protected Camera _sourceCamera;
         protected RenderTexture _renderTexture;
@@ -38,7 +47,6 @@ namespace Surveillance.Cameras
             }
         }
         
-        // Unity-методы сделаны protected virtual
         protected virtual void Awake()
         {
             if (_sourceCamera == null)
@@ -60,12 +68,20 @@ namespace Surveillance.Cameras
 
         protected virtual void OnDestroy() => ReleaseRenderTexture();
 
-        // Основные методы сделаны virtual, если наследник захочет изменить их логику
         public virtual void Initialize()
         {
             if (_isInitialized) return;
 
             if (_sourceCamera == null) _sourceCamera = GetComponent<Camera>();
+            
+            if (useGlobalConfig && ConfigurationManager.Instance != null)
+            {
+                ApplyConfig(ConfigurationManager.Instance.CurrentConfig.CameraSettings);
+            }
+            else
+            {
+                ApplyCurrentSettings();
+            }
             
             CreateRenderTexture();
             _sourceCamera.targetTexture = _renderTexture;
@@ -88,20 +104,40 @@ namespace Surveillance.Cameras
         {
             if (config == null || _sourceCamera == null) return;
 
-            width = config.RenderWidth;
-            height = config.RenderHeight;
-            depthBits = config.DepthBits;
-            renderTextureFormat = config.Format;
-            targetCaptureFps = config.TargetFps;
-            startStreaming = config.StartStreaming;
+            if (useGlobalConfig)
+            {
+                renderWidth = config.RenderWidth;
+                renderHeight = config.RenderHeight;
+                depthBits = config.DepthBits;
+                renderTextureFormat = config.Format;
+                targetCaptureFps = config.TargetFps;
+                startStreaming = config.StartStreaming;
 
-            _sourceCamera.fieldOfView = config.FieldOfView;
-            _sourceCamera.nearClipPlane = config.NearClipPlane;
-            _sourceCamera.farClipPlane = config.FarClipPlane;
-            _sourceCamera.clearFlags = config.ClearFlags;
-            _sourceCamera.backgroundColor = config.BackgroundColor;
-            _sourceCamera.allowHDR = config.AllowHdr;
-            _sourceCamera.allowMSAA = config.AllowMsaa;
+                fieldOfView = config.FieldOfView;
+                nearClipPlane = config.NearClipPlane;
+                farClipPlane = config.FarClipPlane;
+                clearFlags = config.ClearFlags;
+                backgroundColor = config.BackgroundColor;
+                allowHdr = config.AllowHdr;
+                allowMsaa = config.AllowMsaa;
+            }
+
+            ApplyCurrentSettings();
+        }
+
+        public virtual void ApplyCurrentSettings()
+        {
+            if (_sourceCamera == null) return;
+
+            _sourceCamera.fieldOfView = fieldOfView;
+            _sourceCamera.nearClipPlane = nearClipPlane;
+            _sourceCamera.farClipPlane = farClipPlane;
+            _sourceCamera.clearFlags = clearFlags;
+            _sourceCamera.backgroundColor = backgroundColor;
+            _sourceCamera.allowHDR = allowHdr;
+            _sourceCamera.allowMSAA = allowMsaa;
+
+            _isStreaming = startStreaming;
 
             if (_isInitialized)
             {
@@ -114,7 +150,7 @@ namespace Surveillance.Cameras
         protected virtual void CreateRenderTexture()
         {
             ReleaseRenderTexture();
-            _renderTexture = new RenderTexture(width, height, depthBits, renderTextureFormat)
+            _renderTexture = new RenderTexture(renderWidth, renderHeight, depthBits, renderTextureFormat)
             {
                 name = $"RT_{CameraId}", useMipMap = false, autoGenerateMips = false
             };

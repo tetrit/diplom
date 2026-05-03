@@ -13,7 +13,7 @@ namespace Surveillance.Events
         private List<BaseRuleSO> activeRules = new List<BaseRuleSO>();
         public event Action<SystemEvent> OnSystemEventGenerated;
         
-        // Словари для хранения таймеров кулдауна и состояния правил (счетчиков кадров и т.д.)
+
         private Dictionary<string, float> _lastTriggerTimes = new Dictionary<string, float>();
         private Dictionary<string, RuleContext> _ruleContexts = new Dictionary<string, RuleContext>();
 
@@ -40,17 +40,17 @@ namespace Surveillance.Events
             {
                 if (rule == null || !rule.IsActive) continue;
 
-                // Уникальный ключ для пары "Камера + Правило"
+
                 string stateKey = $"{result.CameraId}_{rule.RuleName}";
 
-                // Инициализируем контекст (состояние), если его еще нет
+
                 if (!_ruleContexts.ContainsKey(stateKey))
                     _ruleContexts[stateKey] = new RuleContext();
 
-                // Делегируем проверку самому правилу
+
                 if (rule.Evaluate(result, _ruleContexts[stateKey], out List<BoundingBox> triggeringBoxes, out string eventClassName))
                 {
-                    // Проверка кулдауна
+
                     if (IsCooldownPassed(stateKey, rule.CooldownSeconds))
                     {
                         GenerateAndDispatchEvent(rule, result.CameraId, eventClassName, triggeringBoxes);

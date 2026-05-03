@@ -1,4 +1,4 @@
-// --- ИЗМЕНЕНИЯ В SystemConfigurationSO.cs ---
+
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -16,8 +16,7 @@ namespace Surveillance.Settings
         public DisplayConfig DisplaySettings = new DisplayConfig();[Header("Правила событий")]
         public List<Surveillance.Events.BaseRuleSO> EventRules = new List<Surveillance.Events.BaseRuleSO>();
     }
-
-    // ... (CameraConfig без изменений) ...
+    
     [Serializable]
     public class CameraConfig
     {
@@ -40,19 +39,19 @@ namespace Surveillance.Settings
     [Serializable]
     public class RecognitionConfig
     {
-        [Header("Движок инференса (Фабрика)")][Tooltip("Сюда перетаскиваем ScriptableObject нужной фабрики (например, DefaultYoloFactory)")]
+        [Header("Движок инференса")]
         public Surveillance.Recognize.InferenceFactorySO EngineFactory;[Header("Универсальные параметры")]
         public int InputWidth = 416;
         public int InputHeight = 416;
         [Range(0.1f, 1f)] public float ConfidenceThreshold = 0.5f;
         public float DetectionInterval = 0.2f;
 
-        // ---> НОВОЕ ПОЛЕ <---
+
         [Header("Фильтрация объектов")][Tooltip("Список классов через запятую (например: car, person). Если пусто - разрешены все.")]
         public List<string> AllowedClasses = new List<string>();
     }
 
-    // ... (DisplayConfig без изменений) ...
+
     [Serializable]
     public class DisplayConfig
     {

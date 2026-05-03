@@ -18,6 +18,10 @@ public class MonitorManager : MonoBehaviour
     private void Start()
     {
         RefreshMonitorDictionary();
+        if (ConfigurationManager.Instance != null)
+        {
+            ConfigurationManager.Instance.OnConfigurationChanged += OnSettingsChanged;
+        }
     }
     
     public void AddMonitor()
@@ -80,6 +84,18 @@ public class MonitorManager : MonoBehaviour
             if (!_monitorsDict.ContainsKey(monitors[i].MonitorID))
             {
                 _monitorsDict.Add(monitors[i].MonitorID, monitors[i]);
+            }
+        }
+    }
+    
+    private void OnSettingsChanged(SystemConfigurationSO config)
+    {
+   
+        foreach (var monitor in _monitorsDict.Values)
+        {
+            if (monitor != null)
+            {
+                monitor.ApplyConfig(config.DisplaySettings);
             }
         }
     }

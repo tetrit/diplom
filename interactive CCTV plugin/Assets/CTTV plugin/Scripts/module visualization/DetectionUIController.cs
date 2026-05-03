@@ -1,5 +1,4 @@
 using Surveillance.Recognize;
-using Surveillance.Settings;
 using UnityEngine;
 
 [RequireComponent(typeof(YoloOverlayCanvas))]
@@ -16,27 +15,15 @@ public class DetectionUIController : MonoBehaviour
 
         if (_recognizeManager != null)
             _recognizeManager.onCameraDetectionsCompleted += OnDetectionsReceived;
-
-        if (ConfigurationManager.Instance != null)
-        {
-            ConfigurationManager.Instance.OnConfigurationChanged += OnSettingsChanged;
-            OnSettingsChanged(ConfigurationManager.Instance.CurrentConfig);
-        }
-    }
-
-    // ИСПРАВЛЕНО: SystemConfigurationSO
-    private void OnSettingsChanged(SystemConfigurationSO config)
-    {
-        if (_overlayCanvas != null)
-        {
-            _overlayCanvas.MaxBoxes = config.DisplaySettings.MaxBoxesOnScreen;
-            _overlayCanvas.DefaultBoxColor = config.DisplaySettings.BoundingBoxColor;
-        }
     }
 
     private void OnDetectionsReceived(DetectionResult result)
     {
-        if (result.CameraId != _monitorSource.TargetCameraId) return;
+        if (_monitorSource == null || result.CameraId != _monitorSource.TargetCameraId) return;
+        
+        _overlayCanvas.MaxBoxes = _monitorSource.MaxBoxesOnScreen;
+        _overlayCanvas.DefaultBoxColor = _monitorSource.BoundingBoxColor;
+
         _overlayCanvas.ClearBoxes();
 
         int boxIndex = 0;
@@ -55,7 +42,7 @@ public class DetectionUIController : MonoBehaviour
 
     void OnDestroy()
     {
-        if (_recognizeManager != null) _recognizeManager.onCameraDetectionsCompleted -= OnDetectionsReceived;
-        if (ConfigurationManager.Instance != null) ConfigurationManager.Instance.OnConfigurationChanged -= OnSettingsChanged;
+        if (_recognizeManager != null) 
+            _recognizeManager.onCameraDetectionsCompleted -= OnDetectionsReceived;
     }
 }

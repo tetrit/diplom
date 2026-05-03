@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 
 namespace Surveillance.Settings
-{[DefaultExecutionOrder(-100)] // Загружается первым
+{[DefaultExecutionOrder(-100)] 
     public class ConfigurationManager : MonoBehaviour
     {
         public static ConfigurationManager Instance { get; private set; }[Header("Единый файл настроек системы")]
@@ -10,7 +10,7 @@ namespace Surveillance.Settings
 
         public SystemConfigurationSO CurrentConfig => currentConfig;
 
-        // Событие рассылки настроек по рабочим модулям
+    
         public event Action<SystemConfigurationSO> OnConfigurationChanged;
 
         private void Awake()
