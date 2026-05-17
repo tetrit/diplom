@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Surveillance.Logs
 {
-    // Хранилище в оперативной памяти (для предоставления данных UI)
+
     public class MemoryLogStorage : ILogStorage
     {
         private readonly List<LogEntry> _logs = new List<LogEntry>();
@@ -20,24 +20,24 @@ namespace Surveillance.Logs
             _logs.Add(entry);
             if (_logs.Count > _maxRecords)
             {
-                _logs.RemoveAt(0); // Удаляем самые старые записи
+                _logs.RemoveAt(0); 
             }
         }
 
         public IEnumerable<LogEntry> GetAllRecords() => _logs;
     }
 
-    // Хранилище в файле (для последующего анализа)
+
     public class FileLogStorage : ILogStorage
     {
         private readonly string _filePath;
 
         public FileLogStorage(string fileName)
         {
-            // Сохраняем в папку проекта (Application.dataPath) или сборки
+
             _filePath = Path.Combine(Application.dataPath, fileName);
             
-            // Записываем заголовок при старте сессии
+ 
             File.AppendAllText(_filePath, $"\n\n--- НАЧАЛО СЕССИИ {System.DateTime.Now} ---\n");
         }
 
@@ -55,7 +55,6 @@ namespace Surveillance.Logs
 
         public IEnumerable<LogEntry> GetAllRecords()
         {
-            // Чтение из файла (может быть тяжелым, лучше использовать MemoryLogStorage для UI)
             throw new System.NotImplementedException("Для просмотра в UI используйте MemoryLogStorage");
         }
     }

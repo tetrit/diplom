@@ -12,7 +12,7 @@ namespace Surveillance.Logs
         public int MaxMemoryLogs = 1000;
 
         [Header("Фильтрация входных данных")]
-        public bool LogSystemEvents = true;       // Логировать срабатывания правил[Tooltip("Осторожно: логирование сырых детекций создает очень много записей!")]
-        public bool LogRawDetections = false;     // Логировать каждый кадр распознавания
+        public bool LogSystemEvents = true;       
+        public bool LogRawDetections = false;     
     }
 }

@@ -9,7 +9,7 @@ namespace Surveillance.Cameras
     {
         public int CameraId;
 
-        // Текущие параметры (теперь они заполняются Менеджером настроек)
+
         private int width = 640;
         private int height = 360;
         private int depthBits = 24;
@@ -81,8 +81,7 @@ namespace Surveillance.Cameras
         }
         
         public int GetTargetCaptureFps() => Mathf.Max(1, targetCaptureFps);
-
-        // НОВЫЙ МЕТОД: Применение настроек из Центрального Модуля
+        
         public void ApplyConfig(CameraConfig config)
         {
             if (config == null || _sourceCamera == null) return;
@@ -101,8 +100,7 @@ namespace Surveillance.Cameras
             _sourceCamera.backgroundColor = config.BackgroundColor;
             _sourceCamera.allowHDR = config.AllowHdr;
             _sourceCamera.allowMSAA = config.AllowMsaa;
-
-            // Пересоздаем текстуру, если изменилось разрешение
+            
             if (_isInitialized)
             {
                 CreateRenderTexture();

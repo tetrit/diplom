@@ -81,7 +81,7 @@ public abstract class MonitorSource : MonoBehaviour
         _cameraManager.cameraInitializedEvent -= OnCameraRegistered;
         _cameraManager.cameraInitializedEvent += OnCameraRegistered;
         
-        // Надежно отписываемся от старой камеры
+
         if (_boundCamera != null)
         {
             _boundCamera.CameraReloaded -= BindCamera;
@@ -91,7 +91,6 @@ public abstract class MonitorSource : MonoBehaviour
 
         if (_boundCamera != null) 
         {
-            // Надежно подписываемся на новую
             _boundCamera.CameraReloaded += BindCamera;
             UpdateCameraTexture();
         }

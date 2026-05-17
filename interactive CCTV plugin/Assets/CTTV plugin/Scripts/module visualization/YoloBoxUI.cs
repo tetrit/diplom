@@ -41,10 +41,7 @@ public class YoloBoxUI : MonoBehaviour
             Hide();
             return;
         }
-
-        // anchorMin/anchorMax задаются в нормализованных координатах родительского RectTransform.
-        // У YOLO начало координат сверху-слева, у RectTransform anchors — снизу-слева,
-        // поэтому по Y делаем инверсию.
+        
         rectTransform.anchorMin = new Vector2(leftNorm, 1f - bottomNorm);
         rectTransform.anchorMax = new Vector2(rightNorm, 1f - topNorm);
         rectTransform.offsetMin = Vector2.zero;

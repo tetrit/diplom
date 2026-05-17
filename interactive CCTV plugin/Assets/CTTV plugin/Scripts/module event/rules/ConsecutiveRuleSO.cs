@@ -16,21 +16,18 @@ namespace Surveillance.Events.Rules
         {
             eventClassName = TargetClassName;
             triggeringBoxes = GetMatchedBoxes(result.Boxes);
-
-            // Если в текущем кадре нужное кол-во объектов есть
+            
             if (triggeringBoxes.Count >= MinimumObjectsCount)
             {
                 context.ConsecutiveDetections++;
                 if (context.ConsecutiveDetections >= RequiredConsecutiveDetections)
                 {
-                    // Правило сработало. Сбрасываем счетчик, чтобы избежать спама
                     context.ConsecutiveDetections = 0; 
                     return true;
                 }
             }
             else
             {
-                // Объекты пропали или их мало - сбрасываем цепочку
                 context.ConsecutiveDetections = 0;
             }
 
